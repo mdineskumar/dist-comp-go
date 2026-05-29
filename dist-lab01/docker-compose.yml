@@ -1,0 +1,68 @@
+services:
+  # NODE 1: THE SERVER
+  server:
+    build: .
+    container_name: lab01-g3-server
+    cap_add:
+      - NET_ADMIN # Required for iptables and tc experiments
+    volumes:
+      - .:/lab01
+    networks:
+      lab_net:
+        ipv4_address: 10.8.100.22
+
+  # NODE 2: CLIENT
+  client2:
+    build: .
+    container_name: lab01-g3-client2
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - .:/lab01
+    networks:
+      lab_net:
+        ipv4_address: 10.8.100.1
+
+  # NODE 3: CLIENT
+  client3:
+    build: .
+    container_name: lab01-g3-client3
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - .:/lab01
+    networks:
+      lab_net:
+        ipv4_address: 10.8.100.2
+
+  # NODE 4: CLIENT
+  client4:
+    build: .
+    container_name: lab01-g3-client4
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - .:/lab01
+    networks:
+      lab_net:
+        ipv4_address: 10.8.100.12
+
+  # NODE 5: CLIENT
+  client5:
+    build: .
+    container_name: lab01-g3-client5
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - .:/lab01
+    networks:
+      lab_net:
+        ipv4_address: 10.8.100.28
+
+networks:
+  lab_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.8.100.0/24
+          gateway: 10.8.100.254 # This moves the gateway so .1 is free!
