@@ -29,7 +29,19 @@ import "fmt"
 //
 // TODO: implement this function
 func (n *Node) Put(key, value string) error {
-	// YOUR CODE HERE
+	id := hashKey(key)
+	succ, err := n.findSuccessor(id)
+
+	if err != nil {
+		return err
+	}
+
+	if succ.Addr == n.info.Addr {
+		n.localPut(key, value)
+	} else {
+		callRPC(succ.Addr, "ChordRPC.Put", &PutArgs{Key: key, Value: value}, &PutReply{})
+	}
+
 	return nil
 }
 
@@ -49,8 +61,32 @@ func (n *Node) Put(key, value string) error {
 //
 // TODO: implement this function
 func (n *Node) Get(key string) (string, error) {
-	// YOUR CODE HERE
-	return "", fmt.Errorf("not implemented")
+	id := hashKey(key)
+
+	succ, err := n.findSuccessor(id)
+
+	if err != nil {
+		return "", err
+	}
+	if succ.Addr == n.info.Addr {
+		val, found := n.localGet(key)
+		if !found {
+			return "", fmt.Errorf("key %q not found", key)
+		}
+		return val, nil
+	}
+
+	var reply GetReply
+	err = callRPC(succ.Addr, "ChordRPC.Get", &GetArgs{Key: key}, &reply)
+	if err != nil {
+		return "", err
+	}
+
+	if !reply.Found {
+		return "", fmt.Errorf("key %q not found", key)
+	}
+	return reply.Value, nil
+
 }
 
 // ============================================================
@@ -65,7 +101,7 @@ func (n *Node) Get(key string) (string, error) {
 //
 // TODO: implement this function
 func (n *Node) Delete(key string) error {
-	// YOUR CODE HERE
+
 	return nil
 }
 

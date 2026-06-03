@@ -57,8 +57,12 @@ type ChordRPC struct{ node *Node }
 //
 // TODO: implement
 func (r *ChordRPC) FindSuccessor(args *FindSuccessorArgs, reply *FindSuccessorReply) error {
-	// YOUR CODE HERE
-	return nil
+	node, err := r.node.findSuccessor(args.ID)
+	if err != nil {
+		return nil
+	}
+	reply.Node = node
+	return err
 }
 
 // ── GetPredecessor ────────────────────────────────────────────
@@ -68,7 +72,7 @@ func (r *ChordRPC) FindSuccessor(args *FindSuccessorArgs, reply *FindSuccessorRe
 //
 // TODO: implement
 func (r *ChordRPC) GetPredecessor(args *GetPredecessorArgs, reply *GetPredecessorReply) error {
-	// YOUR CODE HERE
+	reply.Node = r.node.predecessor
 	return nil
 }
 
@@ -80,11 +84,16 @@ func (r *ChordRPC) GetPredecessor(args *GetPredecessorArgs, reply *GetPredecesso
 //     meaning args.Node is closer to us than our current predecessor
 //
 // HINT: use inRange(args.Node.ID, n.predecessor.ID, n.info.ID)
-//       use n.mu.Lock() / n.mu.Unlock()
+//
+//	use n.mu.Lock() / n.mu.Unlock()
 //
 // TODO: implement
 func (r *ChordRPC) Notify(args *NotifyArgs, reply *NotifyReply) error {
-	// YOUR CODE HERE
+	r.node.mu.Lock()
+	defer r.node.mu.Unlock()
+	if r.node.predecessor == nil || inRange(args.Node.ID, r.node.predecessor.ID, r.node.info.ID) {
+		r.node.predecessor = &args.Node
+	}
 	return nil
 }
 
@@ -94,7 +103,7 @@ func (r *ChordRPC) Notify(args *NotifyArgs, reply *NotifyReply) error {
 //
 // TODO: implement
 func (r *ChordRPC) Put(args *PutArgs, reply *PutReply) error {
-	// YOUR CODE HERE
+	r.node.localPut(args.Key, args.Value)
 	return nil
 }
 
@@ -105,7 +114,7 @@ func (r *ChordRPC) Put(args *PutArgs, reply *PutReply) error {
 //
 // TODO: implement
 func (r *ChordRPC) Get(args *GetArgs, reply *GetReply) error {
-	// YOUR CODE HERE
+	reply.Value, reply.Found = r.node.localGet(args.Key)
 	return nil
 }
 
@@ -116,7 +125,7 @@ func (r *ChordRPC) Get(args *GetArgs, reply *GetReply) error {
 //
 // TODO: implement
 func (r *ChordRPC) Delete(args *DeleteArgs, reply *DeleteReply) error {
-	// YOUR CODE HERE
+	reply.Deleted = r.node.localDelete(args.Key)
 	return nil
 }
 

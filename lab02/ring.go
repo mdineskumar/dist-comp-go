@@ -43,12 +43,16 @@ import (
 // TODO: implement this function
 func (n *Node) findSuccessor(id uint8) (NodeInfo, error) {
 	succ := n.successor()
+
+	// 1. Check if id falls in (n.info.ID, n.successor().ID]
+	// inRange(id, start, end) exactly maps to the half-open arc (start, end]
 	if inRange(id, n.info.ID, n.successor().ID) {
 		return succ, nil
 	}
 
 	cpNode := n.closestPrecedingFinger(id)
 
+	//there is only one node
 	if cpNode.ID == n.info.ID {
 		return n.info, nil
 	}
@@ -60,7 +64,7 @@ func (n *Node) findSuccessor(id uint8) (NodeInfo, error) {
 		return NodeInfo{}, err
 	}
 
-	//return errot
+	//return reply node
 	return reply.Node, nil
 }
 
@@ -86,10 +90,13 @@ func (n *Node) closestPrecedingFinger(id uint8) NodeInfo {
 
 	for i := M - 1; i >= 0; i-- {
 		f := n.fingers[i]
-		if inRange(f.ID, n.info.ID, id) && f.ID != id && f.Addr != n.info.Addr {
+		//return first finger whose ID falss in (n.info.ID, id)
+		//inRange is (start, end], strictly find preceding finger
+		if inRange(f.ID, n.info.ID, id) && f.ID != id { //&& f.ID != id && f.Addr != n.info.Addr {
 			return f
 		}
 	}
+	// if no finder qualifies, return this node itself
 	return n.info
 }
 
@@ -167,7 +174,30 @@ func (n *Node) join(existingAddr string) error {
 //
 // TODO: implement this function
 func (n *Node) stabilize() {
-	// YOUR CODE HERE
+	succ := n.successor()
+	var reply GetPredecessorReply
+	err := callRPC(succ.Addr, "ChordRPC.GetPredecessor", &GetPredecessorArgs{}, &reply)
+	if err != nil {
+		return
+	}
+
+	x := reply.Node
+
+	if x != nil && inRange(x.ID, n.info.ID, succ.ID) {
+		n.mu.Lock()
+		n.fingers[0] = *x
+		n.mu.Unlock()
+		succ = *x
+
+	}
+
+	var notifyReply NotifyReply
+
+	errNotify := callRPC(succ.Addr, "ChordRPC.Notify", &NotifyArgs{Node: n.info}, &notifyReply)
+
+	if errNotify != nil {
+		return
+	}
 }
 
 // ============================================================
@@ -190,7 +220,24 @@ func (n *Node) stabilize() {
 //
 // TODO: implement this function
 func (n *Node) fixFingers() {
-	// YOUR CODE HERE
+	n.mu.Lock()
+	next := n.next
+	n.mu.Unlock()
+
+	start := (n.info.ID + uint8(1)<<uint(next))
+
+	fingerNode, err := n.findSuccessor(start)
+
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if err != nil {
+		return
+	}
+
+	n.fingers[next] = fingerNode
+	n.next = (n.next + 1) % M
+
 }
 
 // ============================================================
