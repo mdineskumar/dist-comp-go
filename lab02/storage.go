@@ -101,6 +101,28 @@ func (n *Node) Get(key string) (string, error) {
 //
 // TODO: implement this function
 func (n *Node) Delete(key string) error {
+	id := hashKey(key)
+	succ, err := n.findSuccessor(id)
+
+	if err != nil {
+		return err
+	}
+
+	if succ.Addr == n.info.Addr {
+		deleted := n.localDelete(key)
+		if !deleted {
+			return fmt.Errorf("Key %q not found", key)
+		}
+		return nil
+	}
+
+	var deleteReply DeleteReply
+	callRPC(succ.Addr, "ChordRPC.Delete", &DeleteArgs{Key: key}, &deleteReply)
+	deleted := deleteReply.Deleted
+
+	if !deleted {
+		return fmt.Errorf("Key %q not found", key)
+	}
 
 	return nil
 }

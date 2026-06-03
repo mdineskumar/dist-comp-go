@@ -170,10 +170,19 @@ func runCLI(port string, args []string) {
 		fmt.Println("[INFO] Node is reachable — use 'ring' and 'storage' for details")
 
 	case "ring":
+		err := callRPC(nodeAddr, "ChordRPC.PrintRing", &PrintArgs{}, &PrintReply{})
+
+		if err != nil {
+			log.Fatalf("info failed: %v", err)
+		}
 		fmt.Println("Use 'info' command in the server terminal for ring details")
 		fmt.Println("Or check the server logs with: bash docker/scripts/logs.sh <group>")
 
 	case "storage":
+		err := callRPC(nodeAddr, "ChordRPC.PrintStorage", &PrintArgs{}, &PrintReply{})
+		if err != nil {
+			log.Fatalf("info failed: %v", err)
+		}
 		fmt.Println("Storage details are shown in the server terminal")
 		fmt.Println("Or check the server logs with: bash docker/scripts/logs.sh <group>")
 

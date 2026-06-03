@@ -36,6 +36,9 @@ type GetReply struct {
 	Found bool
 }
 
+type PrintArgs struct{}
+type PrintReply struct{}
+
 type DeleteArgs struct{ Key string }
 type DeleteReply struct{ Deleted bool }
 
@@ -126,6 +129,16 @@ func (r *ChordRPC) Get(args *GetArgs, reply *GetReply) error {
 // TODO: implement
 func (r *ChordRPC) Delete(args *DeleteArgs, reply *DeleteReply) error {
 	reply.Deleted = r.node.localDelete(args.Key)
+	return nil
+}
+
+func (r *ChordRPC) PrintRing(args *PrintArgs, reply *PrintReply) error {
+	r.node.printRing()
+	return nil
+}
+
+func (r *ChordRPC) PrintStorage(args *PrintArgs, reply *PrintReply) error {
+	r.node.printStorage()
 	return nil
 }
 
