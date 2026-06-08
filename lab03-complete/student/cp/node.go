@@ -53,16 +53,16 @@ type Node struct {
 // Create and return a new CP node.
 //
 // Steps:
-//   1. Create a Node with addr, peers, empty store
-//   2. Calculate quorum: len(peers)/2 + 1
-//      Example: 4 peers → quorum = 4/2 + 1 = 3
-//      (need 3 out of 5 total nodes including self)
-//   3. Return a pointer to the node
+//  1. Create a Node with addr, peers, empty store
+//  2. Calculate quorum: len(peers)/2 + 1
+//     Example: 4 peers → quorum = 4/2 + 1 = 3
+//     (need 3 out of 5 total nodes including self)
+//  3. Return a pointer to the node
 //
 // TODO: implement this function
 func NewNode(addr string, peers []string) *Node {
 	// YOUR CODE HERE
-	return nil
+	return &Node{addr: addr, peers: peers, store: map[string]Entry{}, quorum: len(peers)/2 + 1}
 }
 
 // ============================================================
@@ -76,7 +76,9 @@ func NewNode(addr string, peers []string) *Node {
 // TODO: implement this function
 func (n *Node) isAlive(peerAddr string) bool {
 	// YOUR CODE HERE
-	return false
+	err := callRPC(peerAddr, "CPRPC.Ping", &PingArgs{}, &PingReply{})
+
+	return err != nil
 }
 
 // ============================================================

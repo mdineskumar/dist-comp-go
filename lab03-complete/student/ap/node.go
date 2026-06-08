@@ -51,15 +51,14 @@ type Node struct {
 // Create and return a new AP node.
 //
 // Steps:
-//   1. Create a Node with the given addr and peers
-//   2. Initialise store as empty map[string]Entry
-//   3. Set syncInterval to 1 * time.Second
-//   4. Return a pointer to the node
+//  1. Create a Node with the given addr and peers
+//  2. Initialise store as empty map[string]Entry
+//  3. Set syncInterval to 1 * time.Second
+//  4. Return a pointer to the node
 //
 // TODO: implement this function
 func NewNode(addr string, peers []string) *Node {
-	// YOUR CODE HERE
-	return nil
+	return &Node{addr: addr, peers: peers, store: map[string]Entry{}, syncInterval: 1 * time.Second}
 }
 
 // ============================================================
@@ -74,8 +73,7 @@ func NewNode(addr string, peers []string) *Node {
 //
 // TODO: implement this function
 func timestamp() int64 {
-	// YOUR CODE HERE
-	return 0
+	return time.Now().UnixNano()
 }
 
 // ============================================================

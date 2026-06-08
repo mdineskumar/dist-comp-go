@@ -25,6 +25,8 @@ services:
     container_name: lab03-ap-node1
     networks: [lab03]
     ports: ["7001:7000"]
+    volumes:
+      - ../student/ap:/lab03/ap  # This syncs your local AP code
     environment:
       ROLE: ap
       NODE_PORT: "7000"
@@ -35,6 +37,8 @@ services:
     container_name: lab03-ap-node2
     networks: [lab03]
     ports: ["7002:7000"]
+    volumes:
+      - ../student/ap:/lab03/ap  # This syncs your local AP code
     environment:
       ROLE: ap
       NODE_PORT: "7000"
@@ -45,6 +49,8 @@ services:
     container_name: lab03-ap-node3
     networks: [lab03]
     ports: ["7003:7000"]
+    volumes:
+      - ../student/ap:/lab03/ap  # This syncs your local AP code
     environment:
       ROLE: ap
       NODE_PORT: "7000"
@@ -55,6 +61,8 @@ services:
     container_name: lab03-ap-node4
     networks: [lab03]
     ports: ["7004:7000"]
+    volumes:
+      - ../student/ap:/lab03/ap  # This syncs your local AP code
     environment:
       ROLE: ap
       NODE_PORT: "7000"
@@ -65,6 +73,8 @@ services:
     container_name: lab03-ap-node5
     networks: [lab03]
     ports: ["7005:7000"]
+    volumes:
+      - ../student/ap:/lab03/ap  # This syncs your local AP code
     environment:
       ROLE: ap
       NODE_PORT: "7000"
@@ -76,6 +86,9 @@ services:
     container_name: lab03-cp-node1
     networks: [lab03]
     ports: ["8000:8000"]
+    volumes:
+      - ../student/cp:/lab03/cp  # This syncs your local CP code
+
     environment:
       ROLE: cp
       NODE_PORT: "8000"
@@ -86,6 +99,9 @@ services:
     container_name: lab03-cp-node2
     networks: [lab03]
     ports: ["8001:8000"]
+    volumes:
+      - ../student/cp:/lab03/cp  # This syncs your local CP code
+
     environment:
       ROLE: cp
       NODE_PORT: "8000"
@@ -96,6 +112,9 @@ services:
     container_name: lab03-cp-node3
     networks: [lab03]
     ports: ["8002:8000"]
+    volumes:
+      - ../student/cp:/lab03/cp  # This syncs your local CP code
+
     environment:
       ROLE: cp
       NODE_PORT: "8000"
@@ -106,6 +125,9 @@ services:
     container_name: lab03-cp-node4
     networks: [lab03]
     ports: ["8003:8000"]
+    volumes:
+      - ../student/cp:/lab03/cp  # This syncs your local CP code
+
     environment:
       ROLE: cp
       NODE_PORT: "8000"
@@ -116,6 +138,9 @@ services:
     container_name: lab03-cp-node5
     networks: [lab03]
     ports: ["8004:8000"]
+    volumes:
+      - ../student/cp:/lab03/cp  # This syncs your local CP code
+
     environment:
       ROLE: cp
       NODE_PORT: "8000"
