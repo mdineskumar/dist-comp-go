@@ -1,0 +1,122 @@
+version: '3.8'
+
+# ============================================================
+# Lab 03 — CAP Theorem
+# Docker Compose for local student setup
+#
+# Usage:
+#   docker-compose up -d          # start all 10 nodes
+#   docker-compose down           # stop everything
+#   docker-compose logs ap-node1  # view logs
+#
+# AP nodes: ports 7000-7004 on localhost
+# CP nodes: ports 8000-8004 on localhost
+# ============================================================
+
+networks:
+  lab03:
+    driver: bridge
+
+services:
+
+  # ── AP Nodes (Available + Partition-tolerant) ─────────────
+  ap-node1:
+    image: lab03
+    container_name: lab03-ap-node1
+    networks: [lab03]
+    ports: ["7001:7000"]
+    environment:
+      ROLE: ap
+      NODE_PORT: "7000"
+      PEERS: "ap-node2:7000,ap-node3:7000,ap-node4:7000,ap-node5:7000"
+
+  ap-node2:
+    image: lab03
+    container_name: lab03-ap-node2
+    networks: [lab03]
+    ports: ["7002:7000"]
+    environment:
+      ROLE: ap
+      NODE_PORT: "7000"
+      PEERS: "ap-node1:7000,ap-node3:7000,ap-node4:7000,ap-node5:7000"
+
+  ap-node3:
+    image: lab03
+    container_name: lab03-ap-node3
+    networks: [lab03]
+    ports: ["7003:7000"]
+    environment:
+      ROLE: ap
+      NODE_PORT: "7000"
+      PEERS: "ap-node1:7000,ap-node2:7000,ap-node4:7000,ap-node5:7000"
+
+  ap-node4:
+    image: lab03
+    container_name: lab03-ap-node4
+    networks: [lab03]
+    ports: ["7004:7000"]
+    environment:
+      ROLE: ap
+      NODE_PORT: "7000"
+      PEERS: "ap-node1:7000,ap-node2:7000,ap-node3:7000,ap-node5:7000"
+
+  ap-node5:
+    image: lab03
+    container_name: lab03-ap-node5
+    networks: [lab03]
+    ports: ["7005:7000"]
+    environment:
+      ROLE: ap
+      NODE_PORT: "7000"
+      PEERS: "ap-node1:7000,ap-node2:7000,ap-node3:7000,ap-node4:7000"
+
+  # ── CP Nodes (Consistent + Partition-tolerant) ────────────
+  cp-node1:
+    image: lab03
+    container_name: lab03-cp-node1
+    networks: [lab03]
+    ports: ["8000:8000"]
+    environment:
+      ROLE: cp
+      NODE_PORT: "8000"
+      PEERS: "cp-node2:8000,cp-node3:8000,cp-node4:8000,cp-node5:8000"
+
+  cp-node2:
+    image: lab03
+    container_name: lab03-cp-node2
+    networks: [lab03]
+    ports: ["8001:8000"]
+    environment:
+      ROLE: cp
+      NODE_PORT: "8000"
+      PEERS: "cp-node1:8000,cp-node3:8000,cp-node4:8000,cp-node5:8000"
+
+  cp-node3:
+    image: lab03
+    container_name: lab03-cp-node3
+    networks: [lab03]
+    ports: ["8002:8000"]
+    environment:
+      ROLE: cp
+      NODE_PORT: "8000"
+      PEERS: "cp-node1:8000,cp-node2:8000,cp-node4:8000,cp-node5:8000"
+
+  cp-node4:
+    image: lab03
+    container_name: lab03-cp-node4
+    networks: [lab03]
+    ports: ["8003:8000"]
+    environment:
+      ROLE: cp
+      NODE_PORT: "8000"
+      PEERS: "cp-node1:8000,cp-node2:8000,cp-node3:8000,cp-node5:8000"
+
+  cp-node5:
+    image: lab03
+    container_name: lab03-cp-node5
+    networks: [lab03]
+    ports: ["8004:8000"]
+    environment:
+      ROLE: cp
+      NODE_PORT: "8000"
+      PEERS: "cp-node1:8000,cp-node2:8000,cp-node3:8000,cp-node4:8000"
