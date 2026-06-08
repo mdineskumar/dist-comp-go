@@ -22,17 +22,17 @@ import (
 // acknowledge the write. This guarantees consistency.
 //
 // Steps:
-//   1. Create entry: Entry{Value: value, Timestamp: time.Now().UnixNano()}
-//   2. Call broadcastWrite(key, entry) — sends write to all peers
-//      returns the number of peers that acknowledged
-//   3. Count total acks = peer acks + 1 (self always counts)
-//   4. If total acks < n.quorum:
-//        return error: "quorum not reached: got X need Y"
-//        DO NOT store locally (CP property — reject if no quorum)
-//   5. If quorum reached:
-//        store locally: n.store[key] = entry (use write lock)
-//        print: [CP] Committed key="..." value="..." (acks=X/Y)
-//        return nil
+//  1. Create entry: Entry{Value: value, Timestamp: time.Now().UnixNano()}
+//  2. Call broadcastWrite(key, entry) — sends write to all peers
+//     returns the number of peers that acknowledged
+//  3. Count total acks = peer acks + 1 (self always counts)
+//  4. If total acks < n.quorum:
+//     return error: "quorum not reached: got X need Y"
+//     DO NOT store locally (CP property — reject if no quorum)
+//  5. If quorum reached:
+//     store locally: n.store[key] = entry (use write lock)
+//     print: [CP] Committed key="..." value="..." (acks=X/Y)
+//     return nil
 //
 // ── CP PROPERTY ───────────────────────────────────────────
 // Notice this function RETURNS AN ERROR if quorum is not met.
@@ -42,7 +42,18 @@ import (
 //
 // TODO: implement this function
 func (n *Node) Put(key, value string) error {
-	// YOUR CODE HERE
+	entry := Entry{Value: value, Timestamp: time.Now().UnixNano()}
+	acks := n.broadcastWrite(key, entry)
+
+	total_acks := acks + 1
+
+	if total_acks < n.quorum {
+		return fmt.Errorf("quorum not reached: got %d need %d", total_acks, n.quorum)
+	}
+	n.mu.Lock()
+	n.store[key] = entry
+	n.mu.Unlock()
+	fmt.Printf("[CP] Committed key=%s value=%s (acks=%d/%d)", total_acks, n.quorum)
 	return nil
 }
 
@@ -53,17 +64,17 @@ func (n *Node) Put(key, value string) error {
 // the most recently written value.
 //
 // Steps:
-//   1. Call broadcastRead(key) — asks all peers for the value
-//      returns a slice of Entry from peers that responded
-//   2. Add local value if it exists:
-//        n.mu.RLock()
-//        if local, ok := n.store[key]; ok { append to results }
-//        n.mu.RUnlock()
-//   3. If len(results) < n.quorum:
-//        return "", error: "quorum not reached for read: got X need Y"
-//   4. Find the entry with the highest Timestamp in results
-//   5. If no entry found: return "", error: "key not found"
-//   6. Return best.Value, nil
+//  1. Call broadcastRead(key) — asks all peers for the value
+//     returns a slice of Entry from peers that responded
+//  2. Add local value if it exists:
+//     n.mu.RLock()
+//     if local, ok := n.store[key]; ok { append to results }
+//     n.mu.RUnlock()
+//  3. If len(results) < n.quorum:
+//     return "", error: "quorum not reached for read: got X need Y"
+//  4. Find the entry with the highest Timestamp in results
+//  5. If no entry found: return "", error: "key not found"
+//  6. Return best.Value, nil
 //
 // ── WHY QUORUM READ? ──────────────────────────────────────
 // A quorum read ensures we always see the latest written value.
@@ -74,7 +85,16 @@ func (n *Node) Put(key, value string) error {
 //
 // TODO: implement this function
 func (n *Node) Get(key string) (string, error) {
-	// YOUR CODE HERE
+	results := n.broadcastRead(key)
+	n.mu.RLock()
+	if local, ok := n.store[key]; ok {
+		results = append(results, local)
+	}
+	n.mu.RUnlock()
+	if len(results) < n.quorum {
+		return "", fmt.Errorf("quorum not reached for read: got %d need %d", len(results), n.quorum)
+	}
+
 	return "", fmt.Errorf("not implemented")
 }
 

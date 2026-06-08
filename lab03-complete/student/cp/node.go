@@ -75,10 +75,8 @@ func NewNode(addr string, peers []string) *Node {
 //
 // TODO: implement this function
 func (n *Node) isAlive(peerAddr string) bool {
-	// YOUR CODE HERE
 	err := callRPC(peerAddr, "CPRPC.Ping", &PingArgs{}, &PingReply{})
-
-	return err != nil
+	return err == nil
 }
 
 // ============================================================
