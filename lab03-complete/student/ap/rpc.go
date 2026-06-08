@@ -17,19 +17,19 @@ import (
 
 // ── RPC argument / reply types ────────────────────────────
 
-type PutArgs  struct{ Key, Value string }
+type PutArgs struct{ Key, Value string }
 type PutReply struct{}
 
-type GetArgs  struct{ Key string }
+type GetArgs struct{ Key string }
 type GetReply struct {
 	Value string
 	Found bool
 }
 
-type SyncArgs  struct{ Store map[string]Entry }
+type SyncArgs struct{ Store map[string]Entry }
 type SyncReply struct{ Store map[string]Entry }
 
-type PingArgs  struct{}
+type PingArgs struct{}
 type PingReply struct{}
 
 // APRPC is the RPC handler — all remote-callable methods go here
@@ -46,7 +46,7 @@ type APRPC struct{ node *Node }
 //
 // TODO: implement
 func (r *APRPC) Put(args *PutArgs, reply *PutReply) error {
-	// YOUR CODE HERE
+	r.node.Put(args.Key, args.Value)
 	return nil
 }
 
@@ -57,23 +57,27 @@ func (r *APRPC) Put(args *PutArgs, reply *PutReply) error {
 //
 // TODO: implement
 func (r *APRPC) Get(args *GetArgs, reply *GetReply) error {
-	// YOUR CODE HERE
+	val, found := r.node.Get(args.Key)
+	reply.Found = found
+	reply.Value = val
 	return nil
 }
 
 // ── Sync ──────────────────────────────────────────────────
 // Called during periodic sync by a peer.
 // Steps:
-//   1. Merge the incoming store: n.merge(args.Store)
-//   2. Take a snapshot of our updated store: n.snapshot()
-//   3. Set reply.Store to the snapshot
+//  1. Merge the incoming store: n.merge(args.Store)
+//  2. Take a snapshot of our updated store: n.snapshot()
+//  3. Set reply.Store to the snapshot
 //
 // This bidirectional sync means both nodes benefit from
 // each sync call — not just the caller.
 //
 // TODO: implement
 func (r *APRPC) Sync(args *SyncArgs, reply *SyncReply) error {
-	// YOUR CODE HERE
+	r.node.merge(args.Store)
+	snapshot := r.node.snapshot()
+	reply.Store = snapshot
 	return nil
 }
 

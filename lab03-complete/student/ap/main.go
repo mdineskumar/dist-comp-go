@@ -32,8 +32,8 @@ import (
 )
 
 func main() {
-	mode  := flag.String("mode", "server", "Run mode: 'server' or 'cli'")
-	port  := flag.String("port", "7000", "Port this node listens on")
+	mode := flag.String("mode", "server", "Run mode: 'server' or 'cli'")
+	port := flag.String("port", "7000", "Port this node listens on")
 	peers := flag.String("peers", "", "Comma-separated peer addresses e.g. ap-node2:7000,ap-node3:7000")
 	flag.Parse()
 

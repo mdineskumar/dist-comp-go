@@ -11,7 +11,10 @@ package main
 //   Task 5 — merge()
 // ============================================================
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 // ============================================================
 // TASK 3 — Put
@@ -23,15 +26,20 @@ import "fmt"
 // write during the next sync cycle.
 //
 // Steps:
-//   1. Create an Entry{Value: value, Timestamp: timestamp()}
-//   2. Acquire write lock (n.mu.Lock())
-//   3. Store entry: n.store[key] = entry
-//   4. Release lock (n.mu.Unlock())
-//   5. Print: [AP] Stored key="..." value="..." ts=...
+//  1. Create an Entry{Value: value, Timestamp: timestamp()}
+//  2. Acquire write lock (n.mu.Lock())
+//  3. Store entry: n.store[key] = entry
+//  4. Release lock (n.mu.Unlock())
+//  5. Print: [AP] Stored key="..." value="..." ts=...
 //
 // TODO: implement this function
 func (n *Node) Put(key, value string) {
-	// YOUR CODE HERE
+	entry := Entry{Value: value, Timestamp: timestamp()}
+	n.mu.Lock()
+	n.store[key] = entry
+	n.mu.Unlock()
+	log.Printf("[AP] Stored key=%s value=%s ts=%d", key, entry.Value, entry.Timestamp)
+
 }
 
 // ============================================================
@@ -43,15 +51,20 @@ func (n *Node) Put(key, value string) {
 // local state, even if it might be slightly stale.
 //
 // Steps:
-//   1. Acquire read lock (n.mu.RLock())
-//   2. Look up key in n.store
-//   3. Release lock (n.mu.RUnlock())
-//   4. Return value and true if found
-//   5. Return "" and false if not found
+//  1. Acquire read lock (n.mu.RLock())
+//  2. Look up key in n.store
+//  3. Release lock (n.mu.RUnlock())
+//  4. Return value and true if found
+//  5. Return "" and false if not found
 //
 // TODO: implement this function
 func (n *Node) Get(key string) (string, bool) {
-	// YOUR CODE HERE
+	n.mu.RLock()
+	entry, found := n.store[key]
+	n.mu.RUnlock()
+	if found {
+		return entry.Value, true
+	}
 	return "", false
 }
 
@@ -83,7 +96,20 @@ func (n *Node) Get(key string) (string, bool) {
 //
 // TODO: implement this function
 func (n *Node) merge(incoming map[string]Entry) {
-	// YOUR CODE HERE
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	for key, value := range incoming {
+		localValue, localFound := n.store[key]
+		if localFound {
+			if value.Timestamp > localValue.Timestamp {
+
+				n.store[key] = value
+			}
+		} else {
+			n.store[key] = value
+		}
+
+	}
 }
 
 // ============================================================
@@ -107,8 +133,12 @@ func (n *Node) printDiff(other map[string]Entry) {
 	defer n.mu.RUnlock()
 	fmt.Println("\n── Consistency Check ────────────────────────────")
 	allKeys := make(map[string]bool)
-	for k := range n.store { allKeys[k] = true }
-	for k := range other  { allKeys[k] = true }
+	for k := range n.store {
+		allKeys[k] = true
+	}
+	for k := range other {
+		allKeys[k] = true
+	}
 
 	same, diff := 0, 0
 	for k := range allKeys {
@@ -120,8 +150,12 @@ func (n *Node) printDiff(other map[string]Entry) {
 			diff++
 			lv := "(missing)"
 			rv := "(missing)"
-			if lok { lv = local.Value }
-			if rok { rv = remote.Value }
+			if lok {
+				lv = local.Value
+			}
+			if rok {
+				rv = remote.Value
+			}
 			fmt.Printf("  DIFF key=%-15q  local=%-15q  remote=%q\n", k, lv, rv)
 		}
 	}

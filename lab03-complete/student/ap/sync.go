@@ -23,14 +23,14 @@ import (
 // theirs, merge both.
 //
 // Steps:
-//   1. Take a snapshot of our local store (call n.snapshot())
-//   2. Call the Sync RPC on peerAddr:
-//        args  = SyncArgs{Store: snapshot}
-//        reply = SyncReply{}
-//        method = "APRPC.Sync"
-//   3. If RPC fails → log the error and return
-//        (AP property: never fail because a peer is unreachable)
-//   4. If RPC succeeds → call n.merge(reply.Store)
+//  1. Take a snapshot of our local store (call n.snapshot())
+//  2. Call the Sync RPC on peerAddr:
+//     args  = SyncArgs{Store: snapshot}
+//     reply = SyncReply{}
+//     method = "APRPC.Sync"
+//  3. If RPC fails → log the error and return
+//     (AP property: never fail because a peer is unreachable)
+//  4. If RPC succeeds → call n.merge(reply.Store)
 //
 // ── AP PROPERTY ───────────────────────────────────────────
 // Notice we do NOT return an error here. If a peer is down
@@ -41,7 +41,16 @@ import (
 //
 // TODO: implement this function
 func (n *Node) syncWith(peerAddr string) {
-	// YOUR CODE HERE
+	snapshot := n.snapshot()
+	args := SyncArgs{Store: snapshot}
+	reply := SyncReply{}
+	method := "APRPC.Sync"
+	err := callRPC(peerAddr, method, &args, &reply)
+	if err != nil {
+		log.Fatal("error: ", err)
+		return
+	}
+	n.merge(reply.Store)
 }
 
 // ============================================================
@@ -51,21 +60,22 @@ func (n *Node) syncWith(peerAddr string) {
 // ALL peers.
 //
 // Steps:
-//   1. Print: [SYNC] Background sync started (interval: ...)
-//   2. Launch a goroutine that:
-//      a. Creates a ticker: time.NewTicker(n.syncInterval)
-//      b. On each tick: loops through n.peers and calls
-//         syncWith(peer) for each one
+//  1. Print: [SYNC] Background sync started (interval: ...)
+//  2. Launch a goroutine that:
+//     a. Creates a ticker: time.NewTicker(n.syncInterval)
+//     b. On each tick: loops through n.peers and calls
+//     syncWith(peer) for each one
 //
 // HINT:
-//   go func() {
-//       ticker := time.NewTicker(n.syncInterval)
-//       for range ticker.C {
-//           for _, peer := range n.peers {
-//               ...
-//           }
-//       }
-//   }()
+//
+//	go func() {
+//	    ticker := time.NewTicker(n.syncInterval)
+//	    for range ticker.C {
+//	        for _, peer := range n.peers {
+//	            ...
+//	        }
+//	    }
+//	}()
 //
 // ── SIMPLIFIED METHOD ──────────────────────────────────────
 // We broadcast to ALL peers every second. This is simple
@@ -79,8 +89,15 @@ func (n *Node) syncWith(peerAddr string) {
 //
 // TODO: implement this function
 func (n *Node) startSync() {
-	// YOUR CODE HERE
 	fmt.Println("[SYNC] Background sync started (interval:", n.syncInterval, ")")
+	go func() {
+		ticker := time.NewTicker(n.syncInterval)
+		for range ticker.C {
+			for _, peer := range n.peers {
+				n.syncWith(peer)
+			}
+		}
+	}()
 }
 
 // ============================================================
