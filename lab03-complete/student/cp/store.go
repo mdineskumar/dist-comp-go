@@ -94,8 +94,21 @@ func (n *Node) Get(key string) (string, error) {
 	if len(results) < n.quorum {
 		return "", fmt.Errorf("quorum not reached for read: got %d need %d", len(results), n.quorum)
 	}
+	var best Entry
+	found := false
+	for _, entry := range results {
 
-	return "", fmt.Errorf("not implemented")
+		if !found || best.Timestamp < entry.Timestamp {
+			found = true
+			best = entry
+		}
+	}
+
+	if !found {
+		return "", fmt.Errorf("key not found")
+	}
+
+	return best.Value, nil
 }
 
 // ============================================================

@@ -124,7 +124,12 @@ func runCLI(port string, args []string) {
 		}
 
 	case "store":
-		fmt.Println("Store contents are shown in the server terminal logs.")
+		err := callRPC(nodeAddr, "ARPC.Print", &PrintArgs{}, &PrintReply{})
+		if err != nil {
+			fmt.Println("Store contents are shown in the server terminal logs.")
+		} else {
+			fmt.Errorf("error: ", err)
+		}
 
 	default:
 		fmt.Printf("Unknown command: %q\n", args[0])

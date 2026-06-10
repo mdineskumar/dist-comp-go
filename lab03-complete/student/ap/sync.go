@@ -47,7 +47,8 @@ func (n *Node) syncWith(peerAddr string) {
 	method := "APRPC.Sync"
 	err := callRPC(peerAddr, method, &args, &reply)
 	if err != nil {
-		log.Fatal("error: ", err)
+		//log.Fatal("error: ", err)
+		log.Println("Failed to reach peer:", peerAddr)
 		return
 	}
 	n.merge(reply.Store)

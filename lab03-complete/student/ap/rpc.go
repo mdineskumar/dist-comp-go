@@ -32,6 +32,9 @@ type SyncReply struct{ Store map[string]Entry }
 type PingArgs struct{}
 type PingReply struct{}
 
+type PrintArgs struct{}
+type PrintReply struct{}
+
 // APRPC is the RPC handler — all remote-callable methods go here
 type APRPC struct{ node *Node }
 
@@ -78,6 +81,11 @@ func (r *APRPC) Sync(args *SyncArgs, reply *SyncReply) error {
 	r.node.merge(args.Store)
 	snapshot := r.node.snapshot()
 	reply.Store = snapshot
+	return nil
+}
+
+func (r *APRPC) Print(args *PrintArgs, reply *PrintReply) error {
+	r.node.printStore()
 	return nil
 }
 
