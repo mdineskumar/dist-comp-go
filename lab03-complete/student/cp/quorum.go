@@ -41,14 +41,14 @@ func (n *Node) broadcastWrite(key string, entry Entry) int {
 	ackCh := make(chan bool)
 
 	for _, peer := range n.peers {
-		go func() {
+		go func(peer string) {
 			err := callRPC(peer, "CPRPC.Write", &WriteArgs{Key: key, Entry: entry}, &WriteReply{})
 			if err != nil {
 				ackCh <- false
 			} else {
 				ackCh <- true
 			}
-		}()
+		}(peer)
 	}
 	count := 0
 
@@ -83,7 +83,7 @@ func (n *Node) broadcastRead(key string) []Entry {
 	resultCh := make(chan Entry)
 
 	for _, peer := range n.peers {
-		go func() {
+		go func(peer string) {
 			reply := ReadReply{}
 			err := callRPC(peer, "CPRPC.Read", &ReadArgs{Key: key}, &reply)
 			if err != nil {
@@ -91,7 +91,7 @@ func (n *Node) broadcastRead(key string) []Entry {
 			} else {
 				resultCh <- reply.Entry
 			}
-		}()
+		}(peer)
 	}
 
 	results := make([]Entry, len(n.peers))

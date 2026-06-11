@@ -42,17 +42,23 @@ import (
 //
 // TODO: implement this function
 func (n *Node) Put(key, value string) error {
+	fmt.Printf("[RPC] CP node put request come in--1: \n")
 	entry := Entry{Value: value, Timestamp: time.Now().UnixNano()}
 	acks := n.broadcastWrite(key, entry)
 
+	fmt.Printf("[RPC] CP node put request come in--2: \n")
 	total_acks := acks + 1
 
 	if total_acks < n.quorum {
 		return fmt.Errorf("quorum not reached: got %d need %d", total_acks, n.quorum)
 	}
+	fmt.Printf("[RPC] CP node put request come in--3: \n")
 	n.mu.Lock()
+	fmt.Printf("[RPC] CP node put request come in--4: \n")
 	n.store[key] = entry
+	fmt.Printf("[RPC] CP node put request come in--5: \n")
 	n.mu.Unlock()
+
 	fmt.Printf("[CP] Committed key=%s value=%s (acks=%d/%d)", key, value, total_acks, n.quorum)
 	return nil
 }

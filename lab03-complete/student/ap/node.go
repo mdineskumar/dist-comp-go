@@ -58,7 +58,7 @@ type Node struct {
 //
 // TODO: implement this function
 func NewNode(addr string, peers []string) *Node {
-	return &Node{addr: addr, peers: peers, store: map[string]Entry{}, syncInterval: 1 * time.Second}
+	return &Node{addr: addr, peers: peers, store: map[string]Entry{}, syncInterval: 10 * time.Second}
 }
 
 // ============================================================

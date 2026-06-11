@@ -102,9 +102,94 @@ Run `export MSYS_NO_PATHCONV=1` first in your Git Bash session.
 docker exec lab03-ap-node1 /lab03/ap/ap_bin -mode cli -port 7000 put city London
 docker exec lab03-ap-node5 /lab03/ap/ap_bin -mode cli -port 7000 get city
 
+docker exec lab03-ap-node1 /lab03/ap/ap_bin -mode cli -port 7000 put version 1
+docker exec lab03-ap-node5 /lab03/ap/ap_bin -mode cli -port 7000 get version
+
+docker stop lab03-ap-node4 lab03-ap-node5
+
+docker exec lab03-ap-node1 /lab03/ap/ap_bin -mode cli -port 7000 ping
+docker exec lab03-ap-node2 /lab03/ap/ap_bin -mode cli -port 7000 ping
+docker exec lab03-ap-node3 /lab03/ap/ap_bin -mode cli -port 7000 ping
+docker exec lab03-ap-node4 /lab03/ap/ap_bin -mode cli -port 7000 ping
+docker exec lab03-ap-node5 /lab03/ap/ap_bin -mode cli -port 7000 ping
+
+docker exec lab03-ap-node1 /lab03/ap/ap_bin -mode cli -port 7000 put status active
+docker exec lab03-ap-node2 /lab03/ap/ap_bin -mode cli -port 7000 get status
+docker exec lab03-ap-node3 /lab03/ap/ap_bin -mode cli -port 7000 get status
+
+docker start lab03-ap-node4 lab03-ap-node5
+
+docker exec lab03-ap-node4 /lab03/ap/ap_bin -mode cli -port 7000 get status
+docker exec lab03-ap-node5 /lab03/ap/ap_bin -mode cli -port 7000 get status
+
+#Experiment D - Majority -AP
+docker stop lab03-ap-node3 lab03-ap-node4 lab03-ap-node5
+
+docker exec lab03-ap-node1 /lab03/ap/ap_bin -mode cli -port 7000 put alert critical
+docker exec lab03-ap-node2 /lab03/ap/ap_bin -mode cli -port 7000 get alert
+
+docker exec lab03-ap-node1 /lab03/ap/ap_bin -mode cli -port 7000 put alert1 critical1
+docker exec lab03-ap-node2 /lab03/ap/ap_bin -mode cli -port 7000 get alert1
+
+docker start lab03-ap-node3 lab03-ap-node4 lab03-ap-node5
+
+docker exec lab03-ap-node1 /lab03/ap/ap_bin -mode cli -port 7000 get alert1
+docker exec lab03-ap-node2 /lab03/ap/ap_bin -mode cli -port 7000 get alert1
+docker exec lab03-ap-node3 /lab03/ap/ap_bin -mode cli -port 7000 get alert1
+docker exec lab03-ap-node4 /lab03/ap/ap_bin -mode cli -port 7000 get alert1
+docker exec lab03-ap-node5 /lab03/ap/ap_bin -mode cli -port 7000 get alert1
+
+# Experiment E
+
+docker exec lab03-ap-node3 iptables -A OUTPUT -j DROP
+docker network disconnect docker_lab03 lab03-ap-node3
+
+docker exec lab03-ap-node1 /lab03/ap/ap_bin -mode cli -port 7000 put score 100
+
+docker exec lab03-ap-node3 /lab03/ap/ap_bin -mode cli -port 7000 put score 999
+
+docker exec lab03-ap-node3 iptables -F
+docker network connect docker_lab03 lab03-ap-node3
+
+docker exec lab03-ap-node1 /lab03/ap/ap_bin -mode cli -port 7000 get score
+docker exec lab03-ap-node2 /lab03/ap/ap_bin -mode cli -port 7000 get score
+docker exec lab03-ap-node3 /lab03/ap/ap_bin -mode cli -port 7000 get score
+docker exec lab03-ap-node4 /lab03/ap/ap_bin -mode cli -port 7000 get score
+docker exec lab03-ap-node5 /lab03/ap/ap_bin -mode cli -port 7000 get score
+
+
 # CP CLI (internal port is always 8000)
 docker exec lab03-cp-node1 /lab03/cp/cp_bin -mode cli -port 8000 put city London
 docker exec lab03-cp-node5 /lab03/cp/cp_bin -mode cli -port 8000 get city
+
+docker exec lab03-cp-node1 /lab03/cp/cp_bin -mode cli -port 8000 put version 1
+docker exec lab03-cp-node5 /lab03/cp/cp_bin -mode cli -port 8000 get version
+
+docker stop lab03-cp-node4 lab03-cp-node5
+docker exec lab03-cp-node1 /lab03/cp/cp_bin -mode cli -port 8000 ping
+docker exec lab03-cp-node2 /lab03/cp/cp_bin -mode cli -port 8000 ping
+docker exec lab03-cp-node3 /lab03/cp/cp_bin -mode cli -port 8000 ping
+docker exec lab03-cp-node4 /lab03/cp/cp_bin -mode cli -port 8000 ping
+docker exec lab03-cp-node5 /lab03/cp/cp_bin -mode cli -port 8000 ping
+
+docker exec lab03-cp-node1 /lab03/cp/cp_bin -mode cli -port 8000 put status active
+docker exec lab03-cp-node2 /lab03/cp/cp_bin -mode cli -port 8000 get status
+docker exec lab03-cp-node3 /lab03/cp/cp_bin -mode cli -port 8000 get status
+
+docker start lab03-cp-node4 lab03-cp-node5
+docker restart lab03-cp-node1 lab03-cp-node2 lab03-cp-node3 lab03-cp-node4 lab03-cp-node5
+
+docker exec lab03-cp-node4 /lab03/cp/cp_bin -mode cli -port 8000 get status
+docker exec lab03-cp-node5 /lab03/cp/cp_bin -mode cli -port 8000 get status
+
+#Experiment D - Majority CP
+docker stop lab03-cp-node3 lab03-cp-node4 lab03-cp-node5
+
+docker exec lab03-cp-node1 /lab03/cp/cp_bin -mode cli -port 8000 put alert critical
+docker exec lab03-cp-node2 /lab03/cp/cp_bin -mode cli -port 8000 get alert
+
+docker start lab03-cp-node3 lab03-cp-node4 lab03-cp-node5
+
 
 # Partition control
 docker stop  lab03-ap-node4 lab03-ap-node5
@@ -128,3 +213,10 @@ docker network connect    docker_lab03 lab03-ap-node3   # restore
 ```
 
 (The exact network name comes from `docker network ls | grep lab03`.)
+
+
+docker exec -w /lab03/ap lab03-ap-node1 go build -o ap_bin .
+docker exec -w /lab03/cp lab03-cp-node1 go build -o cp_bin .
+
+
+

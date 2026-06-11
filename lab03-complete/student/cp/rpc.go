@@ -76,7 +76,8 @@ func (r *CPRPC) Read(args *ReadArgs, reply *ReadReply) error {
 	val, found := r.node.store[args.Key]
 	reply.Entry = val
 	reply.Found = found
-
+	//important
+	r.node.mu.RUnlock()
 	return nil
 }
 
@@ -87,7 +88,9 @@ func (r *CPRPC) Read(args *ReadArgs, reply *ReadReply) error {
 //
 // TODO: implement
 func (r *CPRPC) Put(args *PutArgs, reply *PutReply) error {
+	fmt.Printf("[RPC] CP node put request come in: \n")
 	err := r.node.Put(args.Key, args.Value)
+
 	if err != nil {
 		reply.Err = err.Error()
 	}
