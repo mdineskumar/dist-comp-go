@@ -1,0 +1,11 @@
+=== Lab 03 experiment run ===
+
+>>> EXPERIMENT A — Baseline (normal operation)
+
+>>> AP: put 5 keys on node1
+
+>>> Wait 3s for AP sync, then get all 5 from node5
+
+>>> CP: put 5 keys on node1, get all 5 from node5 immediately
+
+>>> RECORD: AP all 5 ok after 3s? CP all 5 ok immediately?
