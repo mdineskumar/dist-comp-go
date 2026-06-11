@@ -17,26 +17,29 @@ import (
 
 // ── RPC argument / reply types ────────────────────────────
 
-type WriteArgs  struct{ Key string; Entry Entry }
+type WriteArgs struct {
+	Key   string
+	Entry Entry
+}
 type WriteReply struct{}
 
-type ReadArgs  struct{ Key string }
+type ReadArgs struct{ Key string }
 type ReadReply struct {
 	Entry Entry
 	Found bool
 }
 
-type PutArgs  struct{ Key, Value string }
+type PutArgs struct{ Key, Value string }
 type PutReply struct{ Err string }
 
-type GetArgs  struct{ Key string }
+type GetArgs struct{ Key string }
 type GetReply struct {
 	Value string
 	Found bool
 	Err   string
 }
 
-type PingArgs  struct{}
+type PingArgs struct{}
 type PingReply struct{}
 
 // CPRPC is the RPC handler
@@ -56,7 +59,9 @@ type CPRPC struct{ node *Node }
 //
 // TODO: implement
 func (r *CPRPC) Write(args *WriteArgs, reply *WriteReply) error {
-	// YOUR CODE HERE
+	r.node.mu.Lock()
+	defer r.node.mu.Unlock()
+	r.node.store[args.Key] = args.Entry
 	return nil
 }
 
@@ -67,7 +72,11 @@ func (r *CPRPC) Write(args *WriteArgs, reply *WriteReply) error {
 //
 // TODO: implement
 func (r *CPRPC) Read(args *ReadArgs, reply *ReadReply) error {
-	// YOUR CODE HERE
+	r.node.mu.RLock()
+	val, found := r.node.store[args.Key]
+	reply.Entry = val
+	reply.Found = found
+
 	return nil
 }
 
@@ -78,7 +87,10 @@ func (r *CPRPC) Read(args *ReadArgs, reply *ReadReply) error {
 //
 // TODO: implement
 func (r *CPRPC) Put(args *PutArgs, reply *PutReply) error {
-	// YOUR CODE HERE
+	err := r.node.Put(args.Key, args.Value)
+	if err != nil {
+		reply.Err = err.Error()
+	}
 	return nil
 }
 
@@ -90,7 +102,14 @@ func (r *CPRPC) Put(args *PutArgs, reply *PutReply) error {
 //
 // TODO: implement
 func (r *CPRPC) Get(args *GetArgs, reply *GetReply) error {
-	// YOUR CODE HERE
+	val, err := r.node.Get(args.Key)
+	if err != nil {
+		reply.Err = err.Error()
+		reply.Found = false
+	} else {
+		reply.Value = val
+		reply.Found = true
+	}
 	return nil
 }
 

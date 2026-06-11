@@ -53,7 +53,7 @@ func (n *Node) Put(key, value string) error {
 	n.mu.Lock()
 	n.store[key] = entry
 	n.mu.Unlock()
-	fmt.Printf("[CP] Committed key=%s value=%s (acks=%d/%d)", total_acks, n.quorum)
+	fmt.Printf("[CP] Committed key=%s value=%s (acks=%d/%d)", key, value, total_acks, n.quorum)
 	return nil
 }
 
@@ -97,7 +97,6 @@ func (n *Node) Get(key string) (string, error) {
 	var best Entry
 	found := false
 	for _, entry := range results {
-
 		if !found || best.Timestamp < entry.Timestamp {
 			found = true
 			best = entry
