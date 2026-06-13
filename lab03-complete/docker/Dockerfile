@@ -3,12 +3,12 @@ FROM golang:1.21-alpine AS builder
 # Build AP binary
 WORKDIR /build/ap
 COPY student/ap /build/ap
-RUN go mod init lab03ap && go mod tidy && go build -o ap_bin .
+RUN go build -o ap_bin .
 
 # Build CP binary
 WORKDIR /build/cp
 COPY student/cp /build/cp
-RUN go mod init lab03cp && go mod tidy && go build -o cp_bin .
+RUN go build -o cp_bin .
 
 FROM golang:1.21-alpine
 RUN apk add --no-cache bash iptables iproute2

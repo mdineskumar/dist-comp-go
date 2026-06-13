@@ -215,8 +215,24 @@ docker network connect    docker_lab03 lab03-ap-node3   # restore
 (The exact network name comes from `docker network ls | grep lab03`.)
 
 
+```bash
 docker exec -w /lab03/ap lab03-ap-node1 go build -o ap_bin .
 docker exec -w /lab03/cp lab03-cp-node1 go build -o cp_bin .
-
+# Stop all containers
+docker-compose -f docker/docker-compose.yml down
+ 
+# Start all containers again
+docker-compose -f docker/docker-compose.yml up -d
+ 
+# Restart one container (e.g. if it crashed)
+docker restart lab03-ap-node3
+ 
+# View logs of a container
+docker logs lab03-ap-node1
+docker logs -f lab03-ap-node1   # follow live
+ 
+# Check all containers are running
+docker ps | grep lab03
+```
 
 
