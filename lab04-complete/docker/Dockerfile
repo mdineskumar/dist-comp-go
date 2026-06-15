@@ -14,7 +14,7 @@ COPY student/server/proto /build/server/proto/
 
 # Generate gRPC code from proto
 RUN mkdir -p proto && \
-    protoc --go_out=proto --go-grpc_out=proto \
+    protoc --go_out=. --go-grpc_out=. \
     --go_opt=paths=source_relative \
     --go-grpc_opt=paths=source_relative \
     proto/kvstore.proto
@@ -33,7 +33,7 @@ COPY student/server/proto /build/client/proto/
 
 # Generate same proto code for client
 RUN mkdir -p proto && \
-    protoc --go_out=proto --go-grpc_out=proto \
+    protoc --go_out=. --go-grpc_out=. \
     --go_opt=paths=source_relative \
     --go-grpc_opt=paths=source_relative \
     proto/kvstore.proto
