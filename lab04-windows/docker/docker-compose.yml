@@ -1,0 +1,39 @@
+version: '3.8'
+
+# ============================================================
+# Lab 04 — RPC and Web Services
+# Docker Compose for local student setup
+#
+# Usage:
+#   docker-compose up -d               # start
+#   docker-compose down                # stop
+#   docker exec -it lab04-server bash  # enter server
+#   docker exec -it lab04-client bash  # enter client
+# ============================================================
+
+networks:
+  lab04:
+    driver: bridge
+
+services:
+  server:
+    image: lab04
+    container_name: lab04-server
+    hostname: lab04-server
+    networks: [lab04]
+    ports:
+      - "7000:7000"   # net/rpc
+      - "7001:7001"   # gRPC
+      - "8080:8080"   # REST
+    environment:
+      ROLE: server
+
+  client:
+    image: lab04
+    container_name: lab04-client
+    hostname: lab04-client
+    networks: [lab04]
+    environment:
+      ROLE: client
+    depends_on:
+      - server
