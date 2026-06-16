@@ -66,9 +66,9 @@ type GRPCServer struct {
 //
 // TODO: implement
 func (s *GRPCServer) Put(ctx context.Context, req *pb.PutRequest) (*pb.PutResponse, error) {
-	// YOUR CODE HERE
-	_ = fmt.Sprintf // remove when implementing
-	return &pb.PutResponse{Success: false}, nil
+	s.store.Put(req.Key, req.Value)
+	fmt.Printf("[gRPC] Put key=%v value=%v\n", req.Key, req.Value)
+	return &pb.PutResponse{Success: true}, nil
 }
 
 // ── Get ───────────────────────────────────────────────────
@@ -78,8 +78,9 @@ func (s *GRPCServer) Put(ctx context.Context, req *pb.PutRequest) (*pb.PutRespon
 //
 // TODO: implement
 func (s *GRPCServer) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
-	// YOUR CODE HERE
-	return &pb.GetResponse{}, nil
+	val, ok := s.store.Get(req.Key)
+	fmt.Printf("[gRPC] Get key=%v -> found=%v\n", req.Key, ok)
+	return &pb.GetResponse{Value: val, Found: ok}, nil
 }
 
 // ── Delete ────────────────────────────────────────────────
@@ -89,8 +90,9 @@ func (s *GRPCServer) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetRespon
 //
 // TODO: implement
 func (s *GRPCServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
-	// YOUR CODE HERE
-	return &pb.DeleteResponse{}, nil
+	deleted := s.store.Delete(req.Key)
+	fmt.Printf("[gRPC] Delete key=%v\n", req.Key)
+	return &pb.DeleteResponse{Deleted: deleted}, nil
 }
 
 // ── List ──────────────────────────────────────────────────
@@ -100,6 +102,7 @@ func (s *GRPCServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.Del
 //
 // TODO: implement
 func (s *GRPCServer) List(ctx context.Context, req *pb.ListRequest) (*pb.ListResponse, error) {
-	// YOUR CODE HERE
-	return &pb.ListResponse{}, nil
+	keys := s.store.List()
+	fmt.Printf("[gRPC] List -> %v keys\n", len(keys))
+	return &pb.ListResponse{Keys: keys}, nil
 }

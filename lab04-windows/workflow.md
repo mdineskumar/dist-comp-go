@@ -9,3 +9,7 @@
   # 4. Test
   docker exec -it lab04-client bash
   #   then inside: cd /lab04/client && ./client_bin rpc put city London
+
+
+what is grpc?
+  https://grpc.io/docs/what-is-grpc/

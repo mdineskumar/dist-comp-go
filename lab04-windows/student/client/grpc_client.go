@@ -33,6 +33,7 @@ import (
 	"time"
 
 	pb "lab04client/proto"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -50,16 +51,22 @@ type GRPCClient struct {
 //
 // ── Connect ───────────────────────────────────────────────
 // Steps:
-//   1. Dial: grpc.Dial(g.addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-//      Store result in g.conn
-//   2. Create client stub: g.client = pb.NewKeyValueStoreClient(g.conn)
-//   3. Print: [gRPC] Connected to addr
+//  1. Dial: grpc.Dial(g.addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+//     Store result in g.conn
+//  2. Create client stub: g.client = pb.NewKeyValueStoreClient(g.conn)
+//  3. Print: [gRPC] Connected to addr
 //
 // TODO: implement
 func (g *GRPCClient) Connect() error {
-	// YOUR CODE HERE
-	_ = insecure.NewCredentials // remove when implementing
-	return fmt.Errorf("not implemented")
+	conn, err := grpc.Dial(g.addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return err
+	}
+	g.conn = conn
+	g.client = pb.NewKeyValueStoreClient(g.conn)
+
+	fmt.Printf("[gRPC] Connected to %v\n", g.addr)
+	return nil
 }
 
 // ── Put ───────────────────────────────────────────────────
@@ -68,14 +75,19 @@ func (g *GRPCClient) Connect() error {
 // Return error if call fails
 //
 // HINT: ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-//       defer cancel()
+//
+//	defer cancel()
 //
 // TODO: implement
 func (g *GRPCClient) Put(key, value string) error {
-	// YOUR CODE HERE
-	_ = time.Second // remove when implementing
-	_ = context.Background // remove when implementing
-	return fmt.Errorf("not implemented")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := g.client.Put(ctx, &pb.PutRequest{Key: key, Value: value})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ── Get ───────────────────────────────────────────────────
@@ -84,8 +96,10 @@ func (g *GRPCClient) Put(key, value string) error {
 //
 // TODO: implement
 func (g *GRPCClient) Get(key string) (string, bool, error) {
-	// YOUR CODE HERE
-	return "", false, fmt.Errorf("not implemented")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := g.client.Get(ctx, &pb.GetRequest{Key: key})
+	return resp.Value, resp.Found, err
 }
 
 // ── Delete ────────────────────────────────────────────────
@@ -94,8 +108,11 @@ func (g *GRPCClient) Get(key string) (string, bool, error) {
 //
 // TODO: implement
 func (g *GRPCClient) Delete(key string) (bool, error) {
-	// YOUR CODE HERE
-	return false, fmt.Errorf("not implemented")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := g.client.Delete(ctx, &pb.DeleteRequest{Key: key})
+
+	return resp.Deleted, err
 }
 
 // ── List ──────────────────────────────────────────────────
@@ -104,8 +121,10 @@ func (g *GRPCClient) Delete(key string) (bool, error) {
 //
 // TODO: implement
 func (g *GRPCClient) List() ([]string, error) {
-	// YOUR CODE HERE
-	return nil, fmt.Errorf("not implemented")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := g.client.List(ctx, &pb.ListRequest{})
+	return resp.Keys, err
 }
 
 // ── Close ─────────────────────────────────────────────────
@@ -113,7 +132,7 @@ func (g *GRPCClient) List() ([]string, error) {
 //
 // TODO: implement
 func (g *GRPCClient) Close() {
-	// YOUR CODE HERE
+	g.conn.Close()
 }
 
 // NewGRPCClient creates a new GRPCClient for the given address

@@ -27,6 +27,38 @@ import (
 	"net/rpc"
 )
 
+type PutArgs struct {
+	Key   string
+	Value string
+}
+
+type PutReply struct {
+	Success bool
+}
+
+type GetArgs struct {
+	Key string
+}
+
+type GetReply struct {
+	Value string
+	Found bool
+}
+
+type DeleteArgs struct {
+	Key string
+}
+
+type DeleteReply struct {
+	Deleted bool
+}
+
+type ListArgs struct{}
+
+type ListReply struct {
+	Keys []string
+}
+
 // RPCClient wraps a net/rpc connection
 type RPCClient struct {
 	addr   string
@@ -44,8 +76,13 @@ type RPCClient struct {
 //
 // TODO: implement
 func (r *RPCClient) Connect() error {
-	// YOUR CODE HERE
-	return fmt.Errorf("not implemented")
+	client, err := rpc.Dial("tcp", r.addr)
+	if err != nil {
+		return err
+	}
+	r.client = client
+	fmt.Printf("[net/rpc] Connected to %v\n", r.addr)
+	return nil
 }
 
 // ── Put ───────────────────────────────────────────────────
@@ -54,8 +91,20 @@ func (r *RPCClient) Connect() error {
 //
 // TODO: implement
 func (r *RPCClient) Put(key, value string) error {
-	// YOUR CODE HERE
-	return fmt.Errorf("not implemented")
+	args := &PutArgs{Key: key, Value: value}
+	var reply PutReply //empty reply to be filled
+
+	err := r.client.Call("KVHandler.Put", args, &reply)
+
+	if err != nil {
+		return err
+	}
+
+	if !reply.Success {
+		return fmt.Errorf("put failed") //Linters (staticcheck) flag the capital.
+	}
+
+	return nil
 }
 
 // ── Get ───────────────────────────────────────────────────
@@ -64,8 +113,12 @@ func (r *RPCClient) Put(key, value string) error {
 //
 // TODO: implement
 func (r *RPCClient) Get(key string) (string, bool, error) {
-	// YOUR CODE HERE
-	return "", false, fmt.Errorf("not implemented")
+	args := &GetArgs{Key: key}
+	var reply GetReply
+
+	err := r.client.Call("KVHandler.Get", args, &reply)
+
+	return reply.Value, reply.Found, err
 }
 
 // ── Delete ────────────────────────────────────────────────
@@ -74,8 +127,11 @@ func (r *RPCClient) Get(key string) (string, bool, error) {
 //
 // TODO: implement
 func (r *RPCClient) Delete(key string) (bool, error) {
-	// YOUR CODE HERE
-	return false, fmt.Errorf("not implemented")
+	args := &DeleteArgs{Key: key}
+	var reply DeleteReply
+	err := r.client.Call("KVHandler.Delete", args, &reply)
+
+	return reply.Deleted, err
 }
 
 // ── List ──────────────────────────────────────────────────
@@ -84,8 +140,9 @@ func (r *RPCClient) Delete(key string) (bool, error) {
 //
 // TODO: implement
 func (r *RPCClient) List() ([]string, error) {
-	// YOUR CODE HERE
-	return nil, fmt.Errorf("not implemented")
+	var reply ListReply
+	err := r.client.Call("KVHandler.List", &ListArgs{}, &reply)
+	return reply.Keys, err
 }
 
 // ── Close ─────────────────────────────────────────────────
@@ -93,7 +150,7 @@ func (r *RPCClient) List() ([]string, error) {
 //
 // TODO: implement
 func (r *RPCClient) Close() {
-	// YOUR CODE HERE
+	r.client.Close()
 }
 
 // NewRPCClient creates a new RPCClient for the given address
