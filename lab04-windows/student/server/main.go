@@ -73,7 +73,7 @@ func startRPCServer(store *Store) {
 		log.Fatalf("[net/rpc] failed to listen: %v\n", err)
 	}
 	fmt.Printf("[net/rpc] Server listening on port: %v\n", RPC_PORT)
-	rpc.Accept(ln) // startRPCServer() already launched as goroutine in main
+	go rpc.Accept(ln) // startRPCServer() already launched as goroutine in main
 }
 
 // ============================================================
@@ -99,7 +99,7 @@ func startGRPCServer(store *Store) {
 	pb.RegisterKeyValueStoreServer(s, &GRPCServer{store: store})
 
 	fmt.Printf("[gRPC] Server listening on port: %v\n", GRPC_PORT)
-	s.Serve(ln)
+	go s.Serve(ln)
 }
 
 // startRESTServer is already implemented — do not change
