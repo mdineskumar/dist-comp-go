@@ -59,17 +59,32 @@ type RESTClient struct {
 // Print: [REST] PUT key="..." value="..."
 //
 // HINT:
-//   body, _ := json.Marshal(map[string]string{"value": value})
-//   req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(body))
-//   req.Header.Set("Content-Type", "application/json")
-//   resp, err := r.client.Do(req)
+//
+//	body, _ := json.Marshal(map[string]string{"value": value})
+//	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	resp, err := r.client.Do(req)
 //
 // TODO: implement
 func (r *RESTClient) Put(key, value string) error {
-	// YOUR CODE HERE
-	_ = bytes.NewBuffer  // remove when implementing
-	_ = json.Marshal     // remove when implementing
-	return fmt.Errorf("not implemented")
+	url := r.baseURL + "/keys/" + key
+	body, _ := json.Marshal(map[string]string{"value": value})
+
+	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := r.client.Do(req)
+
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("put failed: status %d", resp.StatusCode)
+	}
+	fmt.Printf("[REST] PUT key=%q value=%q\n", key, value)
+
+	return nil
 }
 
 // ── Get ───────────────────────────────────────────────────
@@ -79,15 +94,33 @@ func (r *RESTClient) Put(key, value string) error {
 // Print: [REST] GET key="..."
 //
 // HINT:
-//   resp, err := r.client.Get(url)
-//   body, _ := io.ReadAll(resp.Body)
-//   json.Unmarshal(body, &result)
+//
+//	resp, err := r.client.Get(url)
+//	body, _ := io.ReadAll(resp.Body)
+//	json.Unmarshal(body, &result)
 //
 // TODO: implement
 func (r *RESTClient) Get(key string) (string, bool, error) {
-	// YOUR CODE HERE
-	_ = io.ReadAll // remove when implementing
-	return "", false, fmt.Errorf("not implemented")
+	url := r.baseURL + "/keys/" + key
+
+	resp, err := r.client.Get(url)
+	if err != nil {
+		return "", false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return "", false, nil
+	}
+	var result struct {
+		Value string `json:"value"`
+		Found bool   `json:"found"`
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	json.Unmarshal(body, &result)
+
+	fmt.Printf("[REST] GET key=%v\n", key)
+	return result.Value, result.Found, nil
 }
 
 // ── Delete ────────────────────────────────────────────────
@@ -97,8 +130,23 @@ func (r *RESTClient) Get(key string) (string, bool, error) {
 //
 // TODO: implement
 func (r *RESTClient) Delete(key string) (bool, error) {
-	// YOUR CODE HERE
-	return false, fmt.Errorf("not implemented")
+	url := r.baseURL + "/keys/" + key
+
+	req, _ := http.NewRequest(http.MethodDelete, url, nil)
+	resp, err := r.client.Do(req)
+
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	var result struct {
+		Deleted bool `json:"deleted"`
+	}
+	body, _ := io.ReadAll(resp.Body)
+	json.Unmarshal(body, &result)
+
+	fmt.Printf("[REST] DELETE key=%v\n", key)
+	return result.Deleted, nil
 }
 
 // ── List ──────────────────────────────────────────────────
@@ -109,8 +157,22 @@ func (r *RESTClient) Delete(key string) (bool, error) {
 //
 // TODO: implement
 func (r *RESTClient) List() ([]string, error) {
-	// YOUR CODE HERE
-	return nil, fmt.Errorf("not implemented")
+	url := r.baseURL + "/keys"
+	resp, err := r.client.Get(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	var result struct {
+		Keys []string `json:"keys"`
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	json.Unmarshal(body, &result)
+	fmt.Printf("[REST] LIST -> %v keys\n", len(result.Keys))
+	return result.Keys, nil
 }
 
 // NewRESTClient creates a REST client for the given base URL
