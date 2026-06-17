@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -60,8 +61,12 @@ func main() {
 	cmd := os.Args[2]
 	key := ""
 	value := ""
-	if len(os.Args) >= 4 { key = os.Args[3] }
-	if len(os.Args) >= 5 { value = os.Args[4] }
+	if len(os.Args) >= 4 {
+		key = os.Args[3]
+	}
+	if len(os.Args) >= 5 {
+		value = os.Args[4]
+	}
 
 	switch protocol {
 	case "rpc":
@@ -71,8 +76,13 @@ func main() {
 	case "rest":
 		runREST(cmd, key, value)
 	case "all":
-		if len(os.Args) >= 4 { cmd = os.Args[2]; key = os.Args[3] }
-		if len(os.Args) >= 5 { value = os.Args[4] }
+		if len(os.Args) >= 4 {
+			cmd = os.Args[2]
+			key = os.Args[3]
+		}
+		if len(os.Args) >= 5 {
+			value = os.Args[4]
+		}
 		fmt.Println("── net/rpc ──────────────────")
 		runRPC(cmd, key, value)
 		fmt.Println("── gRPC ─────────────────────")
@@ -225,7 +235,8 @@ func runBenchmark(n int) {
 	// Print results
 	fmt.Printf("\n── Results (%d put+get pairs) ─────────────────\n", n)
 	fmt.Printf("  %-12s  %-12s  %-12s  %s\n", "Protocol", "Total time", "Avg/op", "Ops/sec")
-	fmt.Println("  " + "─"*52)
+
+	fmt.Println("  " + strings.Repeat("─", 52))
 	for _, proto := range []string{"net/rpc", "gRPC", "REST"} {
 		if d, ok := results[proto]; ok {
 			ops := float64(n * 2) // put + get
