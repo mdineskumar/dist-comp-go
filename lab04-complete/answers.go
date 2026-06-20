@@ -1,4 +1,4 @@
-package main
+package lab04complete
 
 // ============================================================
 // Lab 04 — RPC and Web Services
@@ -61,12 +61,8 @@ func main() {
 	cmd := os.Args[2]
 	key := ""
 	value := ""
-	if len(os.Args) >= 4 {
-		key = os.Args[3]
-	}
-	if len(os.Args) >= 5 {
-		value = os.Args[4]
-	}
+	if len(os.Args) >= 4 { key = os.Args[3] }
+	if len(os.Args) >= 5 { value = os.Args[4] }
 
 	switch protocol {
 	case "rpc":
@@ -76,13 +72,8 @@ func main() {
 	case "rest":
 		runREST(cmd, key, value)
 	case "all":
-		if len(os.Args) >= 4 {
-			cmd = os.Args[2]
-			key = os.Args[3]
-		}
-		if len(os.Args) >= 5 {
-			value = os.Args[4]
-		}
+		if len(os.Args) >= 4 { cmd = os.Args[2]; key = os.Args[3] }
+		if len(os.Args) >= 5 { value = os.Args[4] }
 		fmt.Println("── net/rpc ──────────────────")
 		runRPC(cmd, key, value)
 		fmt.Println("── gRPC ─────────────────────")
@@ -172,103 +163,66 @@ func execCmd(proto, cmd, key, value string,
 		} else {
 			fmt.Printf("✅ [%s] %d keys: %v\n", proto, len(keys), keys)
 		}
-	default:
-		fmt.Printf("Unknown command: %s\n", cmd)
-	}
+	default
+
+
+// ============================================================
+// Lab 04 — RPC and Web Services
+// File: types.go  (net/rpc)
+// Role: Request and reply types for the net/rpc server
+//
+// TASK IN THIS FILE:
+//   Task 1 — Define all request and reply structs
+// ============================================================
+
+// ============================================================
+// TASK 1 — Define net/rpc Request and Reply Types
+// ============================================================
+// net/rpc requires every method argument and return value to
+// be a struct. Define the following 8 structs:
+//
+// PutArgs   { Key string, Value string }
+// PutReply  { Success bool }
+//
+// GetArgs   { Key string }
+// GetReply  { Value string, Found bool }
+//
+// DeleteArgs  { Key string }
+// DeleteReply { Deleted bool }
+//
+// ListArgs  {}  (empty — no arguments needed)
+// ListReply { Keys []string }
+//
+// IMPORTANT: All field names must start with a CAPITAL letter.
+// net/rpc uses encoding/gob for serialisation — unexported
+// (lowercase) fields are silently ignored and cause subtle bugs.
+//
+// TODO: define all 8 structs below
+
+type PutArgs struct {
+	Key   string
+	Value string
+}
+type PutReply struct {
+	Success bool
 }
 
-func runBenchmark(n int) {
-	fmt.Printf("\n══════════════════════════════════════════════\n")
-	fmt.Printf(" Lab 04 — Benchmark: %d operations per protocol\n", n)
-	fmt.Printf("══════════════════════════════════════════════\n\n")
-
-	results := map[string]time.Duration{}
-
-	// net/rpc benchmark
-	rpcC := NewRPCClient(RPC_ADDR)
-	if err := rpcC.Connect(); err != nil {
-		fmt.Printf("❌ net/rpc not available: %v\n", err)
-	} else {
-		start := time.Now()
-		for i := 0; i < n; i++ {
-			key := fmt.Sprintf("bench-key-%d", i)
-			rpcC.Put(key, "value")
-			rpcC.Get(key)
-		}
-		results["net/rpc"] = time.Since(start)
-		rpcC.Close()
-	}
-
-	// gRPC benchmark
-	grpcC := NewGRPCClient(GRPC_ADDR)
-	if err := grpcC.Connect(); err != nil {
-		fmt.Printf("❌ gRPC not available: %v\n", err)
-	} else {
-		start := time.Now()
-		for i := 0; i < n; i++ {
-			key := fmt.Sprintf("bench-key-%d", i)
-			grpcC.Put(key, "value")
-			grpcC.Get(key)
-		}
-		results["gRPC"] = time.Since(start)
-		grpcC.Close()
-	}
-
-	// REST benchmark
-	restC := NewRESTClient(REST_URL)
-	start := time.Now()
-	success := 0
-	for i := 0; i < n; i++ {
-		key := fmt.Sprintf("bench-key-%d", i)
-		if err := restC.Put(key, "value"); err == nil {
-			if _, _, err2 := restC.Get(key); err2 == nil {
-				success++
-			}
-		}
-	}
-	if success > 0 {
-		results["REST"] = time.Since(start)
-	} else {
-		fmt.Println("❌ REST not available")
-	}
-
-	// Print results
-	fmt.Printf("\n── Results (%d put+get pairs) ─────────────────\n", n)
-	fmt.Printf("  %-12s  %-12s  %-12s  %s\n", "Protocol", "Total time", "Avg/op", "Ops/sec")
-	//fmt.Println("  " + "─"*52)
-	fmt.Println("  " + strings.Repeat("─", 52))
-	for _, proto := range []string{"net/rpc", "gRPC", "REST"} {
-		if d, ok := results[proto]; ok {
-			ops := float64(n * 2) // put + get
-			avg := d / time.Duration(n*2)
-			opsPerSec := ops / d.Seconds()
-			fmt.Printf("  %-12s  %-12s  %-12s  %.0f\n",
-				proto, d.Round(time.Millisecond),
-				avg.Round(time.Microsecond), opsPerSec)
-		}
-	}
-	fmt.Println()
-	fmt.Println("── Observations ─────────────────────────────")
-	fmt.Println("  Which protocol was fastest? Why?")
-	fmt.Println("  Can you call the REST server with curl? (Try it!)")
-	fmt.Println("  Can you call net/rpc with curl? Why not?")
-	fmt.Println()
+type GetArgs struct {
+	Key string
+}
+type GetReply struct {
+	Value string
+	Found bool
 }
 
-func printUsage() {
-	fmt.Println(`
-Lab 04 Client — Usage:
-  ./client_bin <protocol> <command> [key] [value]
+type DeleteArgs struct {
+	Key string
+}
+type DeleteReply struct {
+	Deleted bool
+}
 
-Protocols:  rpc | grpc | rest | all
-Commands:   put <key> <value> | get <key> | delete <key> | list
-
-Examples:
-  ./client_bin rpc  put city London
-  ./client_bin grpc get city
-  ./client_bin rest delete city
-  ./client_bin rest list
-  ./client_bin all  put city London    # same operation, all 3 protocols
-  ./client_bin bench 100               # benchmark all 3 with 100 ops
-`)
+type ListArgs struct{}
+type ListReply struct {
+	Keys []string
 }

@@ -44,8 +44,14 @@ type RPCClient struct {
 //
 // TODO: implement
 func (r *RPCClient) Connect() error {
-	// YOUR CODE HERE
-	return fmt.Errorf("not implemented")
+	client, err := rpc.Dial("tcp", r.addr)
+	r.client = client
+
+	if err != nil {
+		return fmt.Errorf("client connection %s: %v", r.addr, err.Error())
+	}
+	fmt.Printf("[net/rpc] Connected to addr: ", r.addr)
+	return nil
 }
 
 // ── Put ───────────────────────────────────────────────────
@@ -54,8 +60,13 @@ func (r *RPCClient) Connect() error {
 //
 // TODO: implement
 func (r *RPCClient) Put(key, value string) error {
-	// YOUR CODE HERE
-	return fmt.Errorf("not implemented")
+	reply := PutReply{}
+	err := callRPC(r.client, "KVHandler.Put", &PutArgs{Key: key, Value: value}, &reply)
+
+	if err != nil || !reply.Success {
+		return fmt.Errorf("call failed: %v", err)
+	}
+	return nil
 }
 
 // ── Get ───────────────────────────────────────────────────
@@ -64,8 +75,10 @@ func (r *RPCClient) Put(key, value string) error {
 //
 // TODO: implement
 func (r *RPCClient) Get(key string) (string, bool, error) {
-	// YOUR CODE HERE
-	return "", false, fmt.Errorf("not implemented")
+	reply := GetReply{}
+	err := callRPC(r.client, "KVHandler.Get", &GetArgs{Key: key}, &reply)
+
+	return reply.Value, reply.Found, err
 }
 
 // ── Delete ────────────────────────────────────────────────
@@ -74,8 +87,11 @@ func (r *RPCClient) Get(key string) (string, bool, error) {
 //
 // TODO: implement
 func (r *RPCClient) Delete(key string) (bool, error) {
-	// YOUR CODE HERE
-	return false, fmt.Errorf("not implemented")
+	reply := DeleteReply{}
+
+	err := callRPC(r.client, "KVHandler.Delete", &DeleteArgs{Key: key}, &reply)
+
+	return reply.Deleted, err
 }
 
 // ── List ──────────────────────────────────────────────────
@@ -84,8 +100,9 @@ func (r *RPCClient) Delete(key string) (bool, error) {
 //
 // TODO: implement
 func (r *RPCClient) List() ([]string, error) {
-	// YOUR CODE HERE
-	return nil, fmt.Errorf("not implemented")
+	reply := ListReply{}
+	err := callRPC(r.client, "KVHandler.List", &ListArgs{}, &reply)
+	return reply.Keys, err
 }
 
 // ── Close ─────────────────────────────────────────────────
@@ -93,10 +110,15 @@ func (r *RPCClient) List() ([]string, error) {
 //
 // TODO: implement
 func (r *RPCClient) Close() {
-	// YOUR CODE HERE
+	r.client.Close()
 }
 
 // NewRPCClient creates a new RPCClient for the given address
 func NewRPCClient(addr string) *RPCClient {
 	return &RPCClient{addr: addr}
+}
+
+func callRPC(client *rpc.Client, method string, args, reply interface{}) error {
+	defer client.Close()
+	return client.Call(method, args, reply)
 }

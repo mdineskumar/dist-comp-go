@@ -34,3 +34,32 @@ package main
 // TODO: define all 8 structs below
 
 // YOUR CODE HERE
+
+type PutArgs struct {
+	Key   string
+	Value string
+}
+
+type PutReply struct {
+	Success bool
+}
+type GetArgs struct {
+	Key string
+}
+type GetReply struct {
+	Value string
+	Found bool
+}
+type DeleteArgs struct {
+	Key string
+}
+type DeleteReply struct {
+	Deleted bool
+}
+
+type ListArgs struct {
+}
+
+type ListReply struct {
+	Keys []string
+}

@@ -15,7 +15,7 @@ import "fmt"
 // net/rpc calls methods on this struct when a remote client
 // sends an RPC request. Each method must have this exact signature:
 //
-//   func (h *KVHandler) MethodName(args *ArgsType, reply *ReplyType) error
+//	func (h *KVHandler) MethodName(args *ArgsType, reply *ReplyType) error
 //
 // The method must be exported (capital letter) and return error.
 type KVHandler struct {
@@ -35,7 +35,9 @@ type KVHandler struct {
 //
 // TODO: implement
 func (h *KVHandler) Put(args *PutArgs, reply *PutReply) error {
-	// YOUR CODE HERE
+	h.store.Put(args.Key, args.Value)
+	reply.Success = true
+	fmt.Printf("[RPC] Put key=%s value=%s", args.Key, args.Value)
 	return nil
 }
 
@@ -46,7 +48,10 @@ func (h *KVHandler) Put(args *PutArgs, reply *PutReply) error {
 //
 // TODO: implement
 func (h *KVHandler) Get(args *GetArgs, reply *GetReply) error {
-	// YOUR CODE HERE
+	val, found := h.store.Get(args.Key)
+	reply.Value = val
+	reply.Found = found
+	fmt.Printf("[RPC] Get key=%s -> found=%b", args.Key, found)
 	return nil
 }
 
@@ -57,7 +62,9 @@ func (h *KVHandler) Get(args *GetArgs, reply *GetReply) error {
 //
 // TODO: implement
 func (h *KVHandler) Delete(args *DeleteArgs, reply *DeleteReply) error {
-	// YOUR CODE HERE
+	deleted := h.store.Delete(args.Key)
+	reply.Deleted = deleted
+	fmt.Printf("[RPC] Delete key=%s", args.Key)
 	return nil
 }
 
@@ -68,7 +75,8 @@ func (h *KVHandler) Delete(args *DeleteArgs, reply *DeleteReply) error {
 //
 // TODO: implement
 func (h *KVHandler) List(args *ListArgs, reply *ListReply) error {
-	// YOUR CODE HERE
-	_ = fmt.Sprintf // remove this line when implementing
+	keys := h.store.List()
+	reply.Keys = keys
+	fmt.Printf("[RPC] List -> %d keys", len(keys))
 	return nil
 }
