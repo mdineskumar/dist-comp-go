@@ -17,16 +17,16 @@ import (
 
 // ── RPC argument / reply types ────────────────────────────
 
-type EnqueueArgs  struct{ QueueName, Payload string }
+type EnqueueArgs struct{ QueueName, Payload string }
 type EnqueueReply struct{ TaskID string }
 
-type DequeueArgs  struct{ QueueName, WorkerID string }
+type DequeueArgs struct{ QueueName, WorkerID string }
 type DequeueReply struct{ Task Task }
 
-type AckArgs  struct{ TaskID string }
+type AckArgs struct{ TaskID string }
 type AckReply struct{ Success bool }
 
-type NackArgs  struct{ TaskID string }
+type NackArgs struct{ TaskID string }
 type NackReply struct{ Success bool }
 
 // QueueRPC is the RPC handler
@@ -46,7 +46,10 @@ var taskCounter int
 //
 // TODO: implement
 func (r *QueueRPC) Enqueue(args *EnqueueArgs, reply *EnqueueReply) error {
-	// YOUR CODE HERE
+	id := generateTaskID()
+	task := Task{ID: id, QueueName: args.QueueName, Payload: args.Payload}
+	r.qm.Enqueue(args.QueueName, task)
+	reply.TaskID = id
 	return nil
 }
 
@@ -57,7 +60,8 @@ func (r *QueueRPC) Enqueue(args *EnqueueArgs, reply *EnqueueReply) error {
 //
 // TODO: implement
 func (r *QueueRPC) Dequeue(args *DequeueArgs, reply *DequeueReply) error {
-	// YOUR CODE HERE
+	task := r.qm.Dequeue(args.QueueName, args.WorkerID)
+	reply.Task = task
 	return nil
 }
 
@@ -67,7 +71,7 @@ func (r *QueueRPC) Dequeue(args *DequeueArgs, reply *DequeueReply) error {
 //
 // TODO: implement
 func (r *QueueRPC) Ack(args *AckArgs, reply *AckReply) error {
-	// YOUR CODE HERE
+	reply.Success = r.qm.Ack(args.TaskID)
 	return nil
 }
 
@@ -77,7 +81,7 @@ func (r *QueueRPC) Ack(args *AckArgs, reply *AckReply) error {
 //
 // TODO: implement
 func (r *QueueRPC) Nack(args *NackArgs, reply *NackReply) error {
-	// YOUR CODE HERE
+	reply.Success = r.qm.Nack(args.TaskID)
 	return nil
 }
 

@@ -40,9 +40,9 @@ type inFlight struct {
 // specify which queue they want by name.
 type QueueManager struct {
 	mu        sync.Mutex
-	queues    map[string]chan Task    // queueName -> channel of pending tasks
-	inFlight  map[string]inFlight     // taskID -> inFlight record (dequeued, awaiting ack)
-	queueSize int                     // buffer size per queue channel
+	queues    map[string]chan Task // queueName -> channel of pending tasks
+	inFlight  map[string]inFlight  // taskID -> inFlight record (dequeued, awaiting ack)
+	queueSize int                  // buffer size per queue channel
 }
 
 // ============================================================
@@ -51,16 +51,16 @@ type QueueManager struct {
 // Create and return a new QueueManager.
 //
 // Steps:
-//   1. Create a QueueManager with:
-//        queues:    make(map[string]chan Task)
-//        inFlight:  make(map[string]inFlight)
-//        queueSize: 100   (buffer size for each queue channel)
-//   2. Return a pointer to it
+//  1. Create a QueueManager with:
+//     queues:    make(map[string]chan Task)
+//     inFlight:  make(map[string]inFlight)
+//     queueSize: 100   (buffer size for each queue channel)
+//  2. Return a pointer to it
 //
 // TODO: implement this function
 func NewQueueManager() *QueueManager {
-	// YOUR CODE HERE
-	return nil
+
+	return &QueueManager{queues: make(map[string]chan Task), inFlight: make(map[string]inFlight), queueSize: 100}
 }
 
 // getOrCreateQueue returns the channel for a queue name,
@@ -84,14 +84,16 @@ func (qm *QueueManager) getOrCreateQueue(name string) chan Task {
 // Add a task to the named queue. Called by producers.
 //
 // Steps:
-//   1. Get the queue channel: ch := qm.getOrCreateQueue(queueName)
-//   2. Send the task into the channel: ch <- task
-//      (this will block if the queue is full — that's OK for now)
-//   3. Print: [QUEUE] Enqueued task=ID to queue="..."
+//  1. Get the queue channel: ch := qm.getOrCreateQueue(queueName)
+//  2. Send the task into the channel: ch <- task
+//     (this will block if the queue is full — that's OK for now)
+//  3. Print: [QUEUE] Enqueued task=ID to queue="..."
 //
 // TODO: implement this function
 func (qm *QueueManager) Enqueue(queueName string, task Task) {
-	// YOUR CODE HERE
+	ch := qm.getOrCreateQueue(queueName)
+	ch <- task
+	fmt.Printf("[QUEUE] Enqueued task=ID to queue=%v\n", queueName)
 }
 
 // ============================================================
@@ -101,19 +103,24 @@ func (qm *QueueManager) Enqueue(queueName string, task Task) {
 // This BLOCKS until a task is available (channels do this naturally).
 //
 // Steps:
-//   1. Get the queue channel: ch := qm.getOrCreateQueue(queueName)
-//   2. Receive a task: task := <-ch  (blocks if empty)
-//   3. Record it as in-flight (awaiting ack) — use a lock:
-//        qm.mu.Lock()
-//        qm.inFlight[task.ID] = inFlight{task: task, workerID: workerID, startTime: time.Now()}
-//        qm.mu.Unlock()
-//   4. Print: [QUEUE] Dequeued task=ID by worker=workerID
-//   5. Return the task
+//  1. Get the queue channel: ch := qm.getOrCreateQueue(queueName)
+//  2. Receive a task: task := <-ch  (blocks if empty)
+//  3. Record it as in-flight (awaiting ack) — use a lock:
+//     qm.mu.Lock()
+//     qm.inFlight[task.ID] = inFlight{task: task, workerID: workerID, startTime: time.Now()}
+//     qm.mu.Unlock()
+//  4. Print: [QUEUE] Dequeued task=ID by worker=workerID
+//  5. Return the task
 //
 // TODO: implement this function
 func (qm *QueueManager) Dequeue(queueName, workerID string) Task {
-	// YOUR CODE HERE
-	return Task{}
+	ch := qm.getOrCreateQueue(queueName)
+	task := <-ch
+	qm.mu.Lock()
+	qm.inFlight[task.ID] = inFlight{task: task, workerID: workerID, startTime: time.Now()}
+	qm.mu.Unlock()
+	fmt.Printf("[QUEUE] Dequeued task=%v by worker=%v\n", task.ID, workerID)
+	return task
 }
 
 // ============================================================
@@ -123,11 +130,11 @@ func (qm *QueueManager) Dequeue(queueName, workerID string) Task {
 // Remove it from the inFlight map — it is now permanently done.
 //
 // Steps:
-//   1. Lock: qm.mu.Lock() / defer qm.mu.Unlock()
-//   2. Check the task exists in qm.inFlight — if not, return false
-//   3. Delete it: delete(qm.inFlight, taskID)
-//   4. Print: [QUEUE] Acked task=ID
-//   5. Return true
+//  1. Lock: qm.mu.Lock() / defer qm.mu.Unlock()
+//  2. Check the task exists in qm.inFlight — if not, return false
+//  3. Delete it: delete(qm.inFlight, taskID)
+//  4. Print: [QUEUE] Acked task=ID
+//  5. Return true
 //
 // ── WHY ACK MATTERS ───────────────────────────────────────
 // Ack happens AFTER the worker finishes processing — not before.
@@ -139,8 +146,15 @@ func (qm *QueueManager) Dequeue(queueName, workerID string) Task {
 //
 // TODO: implement this function
 func (qm *QueueManager) Ack(taskID string) bool {
-	// YOUR CODE HERE
-	return false
+	qm.mu.Lock()
+	defer qm.mu.Unlock()
+	ch,exists:=qm.inFlight[taskID]
+	if !exists{
+		return false
+	}
+	delete(qm.inFlight,taskID)
+	fmt.Printf("[QUEUE] Acked task=%v\n",taskID)
+	return true
 }
 
 // ============================================================
@@ -149,19 +163,28 @@ func (qm *QueueManager) Ack(taskID string) bool {
 // Worker reports failure — task must be redelivered.
 //
 // Steps:
-//   1. Lock: qm.mu.Lock() / defer qm.mu.Unlock()
-//   2. Look up the task in qm.inFlight — if not found, return false
-//   3. Remove it from inFlight: delete(qm.inFlight, taskID)
-//   4. Increment attempt count: record.task.Attempts++
-//   5. Put it back in its queue: qm.queues[record.task.QueueName] <- record.task
-//      (you'll need to look up the queue channel by name)
-//   6. Print: [QUEUE] Nacked task=ID — redelivering (attempt N)
-//   7. Return true
+//  1. Lock: qm.mu.Lock() / defer qm.mu.Unlock()
+//  2. Look up the task in qm.inFlight — if not found, return false
+//  3. Remove it from inFlight: delete(qm.inFlight, taskID)
+//  4. Increment attempt count: record.task.Attempts++
+//  5. Put it back in its queue: qm.queues[record.task.QueueName] <- record.task
+//     (you'll need to look up the queue channel by name)
+//  6. Print: [QUEUE] Nacked task=ID — redelivering (attempt N)
+//  7. Return true
 //
 // TODO: implement this function
 func (qm *QueueManager) Nack(taskID string) bool {
-	// YOUR CODE HERE
-	return false
+	qm.mu.Lock()
+	defer qm.mu.Unlock()
+	record, exists := qm.inFlight[taskID]
+	if !exists {
+		return false
+	}
+	delete(qm.inFlight,taskID)
+	record.task.Attempts++
+	qm.queues[record.task.QueueName] <- record.task
+	fmt.Printf("[QUEUE] Nacked task=%v - redelivering (attempt %v)\n",taskID,record.task.Attempts)
+	return true
 }
 
 // ============================================================
@@ -212,7 +235,7 @@ func (qm *QueueManager) QueueDepth(queueName string) int {
 
 // InFlightCount returns how many tasks are currently being processed
 func (qm *QueueManager) InFlightCount() int {
-	qm.mu.Lock()
+	qm.mu.Lock()ch
 	defer qm.mu.Unlock()
 	return len(qm.inFlight)
 }
