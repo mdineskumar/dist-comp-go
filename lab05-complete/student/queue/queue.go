@@ -59,7 +59,6 @@ type QueueManager struct {
 //
 // TODO: implement this function
 func NewQueueManager() *QueueManager {
-
 	return &QueueManager{queues: make(map[string]chan Task), inFlight: make(map[string]inFlight), queueSize: 100}
 }
 
@@ -93,7 +92,7 @@ func (qm *QueueManager) getOrCreateQueue(name string) chan Task {
 func (qm *QueueManager) Enqueue(queueName string, task Task) {
 	ch := qm.getOrCreateQueue(queueName)
 	ch <- task
-	fmt.Printf("[QUEUE] Enqueued task=ID to queue=%v\n", queueName)
+	fmt.Printf("[QUEUE] Enqueued task=%v to queue=%v\n", task.ID,queueName)
 }
 
 // ============================================================
@@ -148,7 +147,7 @@ func (qm *QueueManager) Dequeue(queueName, workerID string) Task {
 func (qm *QueueManager) Ack(taskID string) bool {
 	qm.mu.Lock()
 	defer qm.mu.Unlock()
-	ch,exists:=qm.inFlight[taskID]
+	_,exists:=qm.inFlight[taskID]
 	if !exists{
 		return false
 	}
@@ -175,14 +174,20 @@ func (qm *QueueManager) Ack(taskID string) bool {
 // TODO: implement this function
 func (qm *QueueManager) Nack(taskID string) bool {
 	qm.mu.Lock()
-	defer qm.mu.Unlock()
+	//defer qm.mu.Unlock() // lock is still held when you send to the channel
+	//only way to drain the channel is for worker to call Dequeue -- which deadlocks 
+
 	record, exists := qm.inFlight[taskID]
 	if !exists {
+		qm.mu.Unlock()
 		return false
 	}
 	delete(qm.inFlight,taskID)
 	record.task.Attempts++
-	qm.queues[record.task.QueueName] <- record.task
+	ch := qm.queues[record.task.QueueName]
+	qm.mu.Unlock() // unlock before the blocking send
+	ch <- record.task
+
 	fmt.Printf("[QUEUE] Nacked task=%v - redelivering (attempt %v)\n",taskID,record.task.Attempts)
 	return true
 }
