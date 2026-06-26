@@ -46,15 +46,15 @@ type Broker struct {
 // Create and return a new Broker.
 //
 // Steps:
-//   1. Create a Broker with:
-//        subscribers: make(map[string][]Subscriber)
-//        seqCounters: make(map[string]int64)
-//   2. Return a pointer to it
+//  1. Create a Broker with:
+//     subscribers: make(map[string][]Subscriber)
+//     seqCounters: make(map[string]int64)
+//  2. Return a pointer to it
 //
 // TODO: implement this function
 func NewBroker() *Broker {
-	// YOUR CODE HERE
-	return nil
+	return &Broker{subscribers: make(map[string][]Subscriber), seqCounters: make(map[string]int64)}
+
 }
 
 // ============================================================
@@ -63,13 +63,17 @@ func NewBroker() *Broker {
 // Register a subscriber for a topic.
 //
 // Steps:
-//   1. Lock: b.mu.Lock() / defer b.mu.Unlock()
-//   2. Append the subscriber to b.subscribers[topic]
-//   3. Print: [BROKER] Subscriber sub.ID joined topic="..."
+//  1. Lock: b.mu.Lock() / defer b.mu.Unlock()
+//  2. Append the subscriber to b.subscribers[topic]
+//  3. Print: [BROKER] Subscriber sub.ID joined topic="..."
 //
 // TODO: implement this function
 func (b *Broker) Subscribe(topic string, sub Subscriber) {
-	// YOUR CODE HERE
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.subscribers[topic] = append(b.subscribers[topic], sub)
+
+	fmt.Printf("[BROKER] Subscriber %v joined topic=%q\n", sub.ID, topic)
 }
 
 // ============================================================
@@ -78,13 +82,27 @@ func (b *Broker) Subscribe(topic string, sub Subscriber) {
 // Remove a subscriber from a topic.
 //
 // Steps:
-//   1. Lock: b.mu.Lock() / defer b.mu.Unlock()
-//   2. Build a new slice excluding the subscriber with matching ID
-//   3. Print: [BROKER] Subscriber subID left topic="..."
+//  1. Lock: b.mu.Lock() / defer b.mu.Unlock()
+//  2. Build a new slice excluding the subscriber with matching ID
+//  3. Print: [BROKER] Subscriber subID left topic="..."
 //
 // TODO: implement this function
 func (b *Broker) Unsubscribe(topic, subID string) {
-	// YOUR CODE HERE
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	//what if we dont find subid in topic
+	//what if there is no topic
+	var updated []Subscriber
+	for _, s := range b.subscribers[topic] {
+		if s.ID != subID {
+			updated = append(updated, s)
+		}
+	}
+	if len(updated) == len(b.subscribers[topic]) {
+		return //subscriber not found
+	}
+	b.subscribers[topic] = updated
+	fmt.Printf("[BROKER] Subscriber %v left topic=%q\n", subID, topic)
 }
 
 // ============================================================
@@ -93,16 +111,48 @@ func (b *Broker) Unsubscribe(topic, subID string) {
 // Fan-out a message to ALL subscribers of a topic.
 //
 // Steps:
-//   1. Lock, increment seq counter, copy subscriber list, unlock
-//   2. Create the event
-//   3. For EACH subscriber, deliver concurrently via goroutine + RPC
-//   4. Print: [BROKER] Published topic="..." key="..." -> N subscribers
-//   5. Return the number of subscribers notified
+//  1. Lock, increment seq counter, copy subscriber list, unlock
+//  2. Create the event
+//  3. For EACH subscriber, deliver concurrently via goroutine + RPC
+//  4. Print: [BROKER] Published topic="..." key="..." -> N subscribers
+//  5. Return the number of subscribers notified
 //
 // TODO: implement this function
 func (b *Broker) Publish(topic, key, value string) int {
-	// YOUR CODE HERE
-	return 0
+	b.mu.Lock()
+	b.seqCounters[topic]++
+	seq := b.seqCounters[topic]
+	subscribers := make([]Subscriber, len(b.subscribers[topic]))
+	copy(subscribers, b.subscribers[topic])
+	b.mu.Unlock()
+
+	event := Event{Topic: topic, Key: key, Value: value, Seq: seq} //race condition when b.seqCounters[topic] used because lock gone
+	//var wg sync.WaitGroup
+	//var delivered atomic.Int64 // how many successful deliveries
+
+	for _, v := range subscribers {
+		//wg.Add(1)
+		go func(subscriber Subscriber) {
+			//defer wg.Done()
+			err := callRPC(subscriber.Addr, "SubscriberRPC.Deliver", &DeliverArgs{Event: event}, &DeliverReply{})
+			if err != nil {
+				fmt.Printf("[BROKER] failed to deliver to %v: %v\n", subscriber.ID, err)
+				//return
+			}
+			//delivered.Add(1) // incremented on successful delivery
+		}(v)
+	}
+
+	//wg.Wait() //it will block
+	//broker pushes to subscriber but in kafka broker stores events, subscribers pull
+	//slow subscriber problem, no replay, no crash recovery
+
+	//count := int(delivered.Load())
+	count := len(subscribers)
+
+	fmt.Printf("[BROKER] Published topic=%q key=%q -> %d subscribers\n", topic, key, count)
+
+	return count
 }
 
 // ============================================================

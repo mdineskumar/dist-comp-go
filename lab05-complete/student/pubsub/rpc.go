@@ -15,13 +15,13 @@ import (
 	"net/rpc"
 )
 
-type SubscribeArgs  struct{ Topic, SubID, SubAddr string }
+type SubscribeArgs struct{ Topic, SubID, SubAddr string }
 type SubscribeReply struct{}
 
-type UnsubscribeArgs  struct{ Topic, SubID string }
+type UnsubscribeArgs struct{ Topic, SubID string }
 type UnsubscribeReply struct{}
 
-type PublishArgs  struct{ Topic, Key, Value string }
+type PublishArgs struct{ Topic, Key, Value string }
 type PublishReply struct{ DeliveredTo int }
 
 // BrokerRPC is the RPC handler — registered on the BROKER side
@@ -36,7 +36,7 @@ type BrokerRPC struct{ broker *Broker }
 //
 // TODO: implement
 func (r *BrokerRPC) Subscribe(args *SubscribeArgs, reply *SubscribeReply) error {
-	// YOUR CODE HERE
+	r.broker.Subscribe(args.Topic, Subscriber{ID: args.SubID, Addr: args.SubAddr})
 	return nil
 }
 
@@ -45,7 +45,7 @@ func (r *BrokerRPC) Subscribe(args *SubscribeArgs, reply *SubscribeReply) error 
 //
 // TODO: implement
 func (r *BrokerRPC) Unsubscribe(args *UnsubscribeArgs, reply *UnsubscribeReply) error {
-	// YOUR CODE HERE
+	r.broker.Unsubscribe(args.Topic, args.SubID)
 	return nil
 }
 
@@ -55,7 +55,8 @@ func (r *BrokerRPC) Unsubscribe(args *UnsubscribeArgs, reply *UnsubscribeReply) 
 //
 // TODO: implement
 func (r *BrokerRPC) Publish(args *PublishArgs, reply *PublishReply) error {
-	// YOUR CODE HERE
+	count := r.broker.Publish(args.Topic, args.Key, args.Value)
+	reply.DeliveredTo = count
 	return nil
 }
 

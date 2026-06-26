@@ -29,12 +29,13 @@ type DeliverReply struct{}
 // this subscriber is subscribed to.
 //
 // Steps:
-//   1. Send the event into the channel: s.receivedEvents <- args.Event
-//   2. Print: [SUBSCRIBER] Received topic="..." key="..." value="..." seq=N
+//  1. Send the event into the channel: s.receivedEvents <- args.Event
+//  2. Print: [SUBSCRIBER] Received topic="..." key="..." value="..." seq=N
 //
 // TODO: implement this function
 func (s *SubscriberRPC) Deliver(args *DeliverArgs, reply *DeliverReply) error {
-	// YOUR CODE HERE
+	s.receivedEvents <- args.Event
+	fmt.Printf("[SUBSCRIBER] Received topic=%q key=%q value %q seq=%d", args.Event.Topic, args.Event.Key, args.Event.Value, args.Event.Seq)
 	return nil
 }
 

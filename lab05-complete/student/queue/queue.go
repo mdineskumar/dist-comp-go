@@ -92,7 +92,7 @@ func (qm *QueueManager) getOrCreateQueue(name string) chan Task {
 func (qm *QueueManager) Enqueue(queueName string, task Task) {
 	ch := qm.getOrCreateQueue(queueName)
 	ch <- task
-	fmt.Printf("[QUEUE] Enqueued task=%v to queue=%v\n", task.ID,queueName)
+	fmt.Printf("[QUEUE] Enqueued task=%v to queue=%v\n", task.ID, queueName)
 }
 
 // ============================================================
@@ -147,12 +147,12 @@ func (qm *QueueManager) Dequeue(queueName, workerID string) Task {
 func (qm *QueueManager) Ack(taskID string) bool {
 	qm.mu.Lock()
 	defer qm.mu.Unlock()
-	_,exists:=qm.inFlight[taskID]
-	if !exists{
+	_, exists := qm.inFlight[taskID]
+	if !exists {
 		return false
 	}
-	delete(qm.inFlight,taskID)
-	fmt.Printf("[QUEUE] Acked task=%v\n",taskID)
+	delete(qm.inFlight, taskID)
+	fmt.Printf("[QUEUE] Acked task=%v\n", taskID)
 	return true
 }
 
@@ -175,20 +175,20 @@ func (qm *QueueManager) Ack(taskID string) bool {
 func (qm *QueueManager) Nack(taskID string) bool {
 	qm.mu.Lock()
 	//defer qm.mu.Unlock() // lock is still held when you send to the channel
-	//only way to drain the channel is for worker to call Dequeue -- which deadlocks 
+	//only way to drain the channel is for worker to call Dequeue -- which deadlocks
 
 	record, exists := qm.inFlight[taskID]
 	if !exists {
 		qm.mu.Unlock()
 		return false
 	}
-	delete(qm.inFlight,taskID)
+	delete(qm.inFlight, taskID)
 	record.task.Attempts++
 	ch := qm.queues[record.task.QueueName]
 	qm.mu.Unlock() // unlock before the blocking send
 	ch <- record.task
 
-	fmt.Printf("[QUEUE] Nacked task=%v - redelivering (attempt %v)\n",taskID,record.task.Attempts)
+	fmt.Printf("[QUEUE] Nacked task=%v - redelivering (attempt %v)\n", taskID, record.task.Attempts)
 	return true
 }
 
@@ -240,7 +240,7 @@ func (qm *QueueManager) QueueDepth(queueName string) int {
 
 // InFlightCount returns how many tasks are currently being processed
 func (qm *QueueManager) InFlightCount() int {
-	qm.mu.Lock()ch
+	qm.mu.Lock()
 	defer qm.mu.Unlock()
 	return len(qm.inFlight)
 }
