@@ -1,0 +1,83 @@
+version: '3.8'
+
+# ============================================================
+# Lab 05 — Event Queues and Pub/Sub
+# Docker Compose for local student setup
+# ============================================================
+
+networks:
+  lab05:
+    driver: bridge
+
+services:
+  queue-broker:
+    image: lab05
+    container_name: lab05-queue-broker
+    hostname: queue-broker
+    networks: [lab05]
+    ports: ["9000:9000"]
+    environment:
+      ROLE: queue-broker
+
+  producer:
+    image: lab05
+    container_name: lab05-producer
+    hostname: producer
+    networks: [lab05]
+    environment:
+      ROLE: idle
+    depends_on: [queue-broker]
+
+  worker:
+    image: lab05
+    container_name: lab05-worker
+    hostname: worker
+    networks: [lab05]
+    environment:
+      ROLE: idle
+    depends_on: [queue-broker]
+
+  pubsub-broker:
+    image: lab05
+    container_name: lab05-pubsub-broker
+    hostname: pubsub-broker
+    networks: [lab05]
+    ports: ["9001:9001"]
+    environment:
+      ROLE: pubsub-broker
+
+  publisher:
+    image: lab05
+    container_name: lab05-publisher
+    hostname: publisher
+    networks: [lab05]
+    environment:
+      ROLE: idle
+    depends_on: [pubsub-broker]
+
+  subscriber1:
+    image: lab05
+    container_name: lab05-subscriber1
+    hostname: subscriber1
+    networks: [lab05]
+    environment:
+      ROLE: idle
+    depends_on: [pubsub-broker]
+
+  subscriber2:
+    image: lab05
+    container_name: lab05-subscriber2
+    hostname: subscriber2
+    networks: [lab05]
+    environment:
+      ROLE: idle
+    depends_on: [pubsub-broker]
+
+  subscriber3:
+    image: lab05
+    container_name: lab05-subscriber3
+    hostname: subscriber3
+    networks: [lab05]
+    environment:
+      ROLE: idle
+    depends_on: [pubsub-broker]
