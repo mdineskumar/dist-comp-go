@@ -30,7 +30,7 @@
 
 > In Experiment D, a late-joining subscriber missed earlier messages. Real systems like Kafka solve this with a persistent log and offsets. Describe at a high level how you would add this capability to your Pub/Sub broker.
 
-### The problem with your current broker
+### The problem with your current broke
 
 - Your broker only keeps a list of who is currently subscribed
 - When `Publish` is called, it delivers to whoever is subscribed right now and forgets the event
