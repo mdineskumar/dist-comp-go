@@ -1,4 +1,17 @@
+
+
 ```bash
+docker build -t lab04 -f docker/Dockerfile .
+docker-compose -f docker/docker-compose.yml up -d
+# to stop all containers
+docker-compose -f docker/docker-compose.yml down
+
+go build -o server_bin .
+pkill server_bin
+docker exec -it lab04-server bash
+docker exec -it lab04-client bash
+
+
 docker exec lab04-client /lab04/client/client_bin rpc put hello world
 docker exec lab04-client /lab04/client/client_bin grpc get hello
 docker exec lab04-client /lab04/client/client_bin rest delete hello
@@ -60,6 +73,25 @@ docker exec lab04-client /lab04/client/client_bin rpc put benchmark test123
 docker exec lab04-client /lab04/client/client_bin grpc get benchmark
 docker exec lab04-client /lab04/client/client_bin rest get benchmark
 # All three should return: test123
+
+time docker exec lab04-client /lab04/client/client_bin rpc  put bigkey $VAL
+time docker exec lab04-client /lab04/client/client_bin grpc put bigkey $VAL
+time docker exec lab04-client /lab04/client/client_bin rest put bigkey $VAL
+./client_bin rpc  put bigkey $VAL
+./client_bin grpc put bigkey $VAL
+./client_bin rest put bigkey $VAL
+
+
+time ./client_bin rpc get bigkey
+time ./client_bin grpc get bigkey
+time ./client_bin rest get bigkey
+
+
+docker exec lab04-client /lab04/client/client_bin rest get bigkey
+
+python3 -c "print('x'*10000)" > /tmp/big.txt
+VAL=$(cat /tmp/big.txt)
+
 ```
 
 

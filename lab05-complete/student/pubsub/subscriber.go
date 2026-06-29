@@ -35,7 +35,7 @@ type DeliverReply struct{}
 // TODO: implement this function
 func (s *SubscriberRPC) Deliver(args *DeliverArgs, reply *DeliverReply) error {
 	s.receivedEvents <- args.Event
-	fmt.Printf("[SUBSCRIBER] Received topic=%q key=%q value %q seq=%d", args.Event.Topic, args.Event.Key, args.Event.Value, args.Event.Seq)
+	fmt.Printf("[SUBSCRIBER] Received topic=%q key=%q value %q seq=%d\n", args.Event.Topic, args.Event.Key, args.Event.Value, args.Event.Seq)
 	return nil
 }
 

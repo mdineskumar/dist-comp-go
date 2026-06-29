@@ -22,8 +22,8 @@ services:
     hostname: lab04-server
     networks: [lab04]
     ports:
-      - "7000:7000"   # net/rpc
-      - "7001:7001"   # gRPC
+      - "7001:7000"   # net/rpc
+      - "7002:7001"   # gRPC
       - "8080:8080"   # REST
     environment:
       ROLE: server
