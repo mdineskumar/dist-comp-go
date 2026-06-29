@@ -59,7 +59,11 @@ docker exec lab05-publisher /lab05/pubsub/pubsub_bin -mode publish -topic news -
 ```
 
 
-## Experiemnts
+## Experiment B — Worker Crash Recovery
+
+### step 1 - increasing the procesing sleep
+### step 2 - run experiment
+
 
 ```bash
 docker exec lab05-worker /lab05/queue/queue_bin -mode work -queue orders -workers 3 &
