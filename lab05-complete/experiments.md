@@ -1,19 +1,14 @@
 Test the Event Queue
 
 ```bash
-docker exec lab05-worker /lab05/queue/queue_bin -mode work -queue orders -workers 3 &
- 
-# Terminal 2 — produce 10 tasks
-docker exec lab05-producer /lab05/queue/queue_bin -mode produce -queue orders -payload order -count 10
- 
-# Watch the worker logs
-docker logs -f lab05-worker
-# Expected: each task processed by exactly one worker
-# [WORKER worker-1] Processing task=task-1 payload="order-0"
-# [WORKER worker-2] Processing task=task-2 payload="order-1"
-# ... tasks distributed across all 3 workers
+docker build -t lab05 -f docker/Dockerfile .
+docker-compose -f docker/docker-compose.yml up -d
 
+docker-compose -f docker/docker-compose.yml down
 
+go build -o server_bin .
+pkill server_bin
+docker exec -it lab05-worker bash
 #fixed above 
 
 # Start workers logging inside the container

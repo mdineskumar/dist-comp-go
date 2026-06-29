@@ -58,7 +58,7 @@ func RunWorkerPool(brokerAddr, queueName string, numWorkers int) {
 				}
 
 				fmt.Printf("[WORKER %v] Processing task=%v payload=%v\n", workerID, deqReply.Task.ID, deqReply.Task.Payload)
-				time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
+				time.Sleep(time.Duration(rand.Intn(8000)) * time.Millisecond)
 
 				ackReply := AckReply{}
 				ackErr := callRPC(brokerAddr, "QueueRPC.Ack", &AckArgs{TaskID: deqReply.Task.ID}, &ackReply)
