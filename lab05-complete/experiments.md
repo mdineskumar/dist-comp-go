@@ -71,8 +71,6 @@ docker exec lab05-worker /lab05/queue/queue_bin -mode work -queue orders -worker
 
 docker exec lab05-producer /lab05/queue/queue_bin -mode produce -queue orders -payload order -count 20
 
-
-
 ```
 
 
