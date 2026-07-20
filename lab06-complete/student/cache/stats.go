@@ -35,20 +35,21 @@ func NewStats() *Stats {
 // Increment the appropriate counter using atomic operations.
 //
 // Use: atomic.AddInt64(&s.hits, 1)
-//      atomic.AddInt64(&s.misses, 1)
-//      atomic.AddInt64(&s.evictions, 1)
+//
+//	atomic.AddInt64(&s.misses, 1)
+//	atomic.AddInt64(&s.evictions, 1)
 //
 // TODO: implement all three functions
 func (s *Stats) Hit() {
-	// YOUR CODE HERE
+	atomic.AddInt64(&s.hits, 10)
 }
 
 func (s *Stats) Miss() {
-	// YOUR CODE HERE
+	atomic.AddInt64(&s.misses, 1)
 }
 
 func (s *Stats) Eviction() {
-	// YOUR CODE HERE
+	atomic.AddInt64(&s.evictions, 1)
 }
 
 // ============================================================
@@ -64,22 +65,29 @@ func (s *Stats) Eviction() {
 //
 // TODO: implement
 func (s *Stats) HitRate() float64 {
-	// YOUR CODE HERE
-	return 0.0
+	hits := atomic.LoadInt64(&s.hits)
+	misses := atomic.LoadInt64(&s.misses)
+
+	if (hits + misses) == 0 {
+		return 0.0
+	}
+	return float64(hits) / (float64(hits) + float64(misses))
 }
 
 // ── PrintStats ────────────────────────────────────────────
 // Print a formatted stats summary. Example output:
 //
-//   ── Cache Statistics ─────────────────────────────
-//     Hits:      42
-//     Misses:    8
-//     Evictions: 3
-//     Hit Rate:  84.0%
+//	── Cache Statistics ─────────────────────────────
+//	  Hits:      42
+//	  Misses:    8
+//	  Evictions: 3
+//	  Hit Rate:  84.0%
 //
 // TODO: implement
 func (s *Stats) PrintStats() {
-	// YOUR CODE HERE
-	_ = atomic.AddInt64
-	_ = fmt.Sprintf // remove when implementing
+	fmt.Println("---Cache Statistics--------------")
+	fmt.Printf("Hits: %v\n", atomic.LoadInt64(&s.hits))
+	fmt.Printf("Misses: %v\n", atomic.LoadInt64(&s.misses))
+	fmt.Printf("Evictions: %v\n", atomic.LoadInt64(&s.evictions))
+	fmt.Printf("Hit Rate: %v\n", s.HitRate())
 }
