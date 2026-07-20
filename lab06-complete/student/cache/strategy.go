@@ -23,12 +23,12 @@ import (
 // simultaneously. The write is only confirmed when BOTH succeed.
 //
 // Steps:
-//   1. Write to origin first: originClient.Set(key, value)
-//      If this fails, return the error (cache stays unchanged)
-//   2. Write to cache: c.Set(key, value, false)
-//      dirty=false because cache and origin are now in sync
-//   3. Print: [WRITE-THROUGH] key="..." written to origin + cache
-//   4. Return nil
+//  1. Write to origin first: originClient.Set(key, value)
+//     If this fails, return the error (cache stays unchanged)
+//  2. Write to cache: c.Set(key, value, false)
+//     dirty=false because cache and origin are now in sync
+//  3. Print: [WRITE-THROUGH] key="..." written to origin + cache
+//  4. Return nil
 //
 // ── WRITE-THROUGH TRADE-OFFS ──────────────────────────────
 // Pro: Cache and origin always consistent — no stale reads
@@ -38,8 +38,15 @@ import (
 //
 // TODO: implement this function
 func WriteThrough(c *Cache, originClient *OriginClient, key, value string) error {
-	// YOUR CODE HERE
-	return fmt.Errorf("not implemented")
+	ok := originClient.Set(key, value)
+	if !ok {
+		return fmt.Errorf("write to origin failed\n")
+	}
+	c.Set(key, value, false)
+
+	fmt.Printf("[WRITE-THROUGH] key=%v written to origin + cache")
+
+	return nil
 }
 
 // ============================================================
@@ -49,22 +56,25 @@ func WriteThrough(c *Cache, originClient *OriginClient, key, value string) error
 // The origin is updated later in the background by flushDirty().
 //
 // Steps:
-//   1. Write to cache: c.Set(key, value, true)
-//      dirty=true because origin has NOT been updated yet
-//   2. Print: [WRITE-BACK] key="..." written to cache (pending origin flush)
-//   3. Return nil (always succeeds immediately)
+//  1. Write to cache: c.Set(key, value, true)
+//     dirty=true because origin has NOT been updated yet
+//  2. Print: [WRITE-BACK] key="..." written to cache (pending origin flush)
+//  3. Return nil (always succeeds immediately)
 //
 // ── WRITE-BACK TRADE-OFFS ────────────────────────────────
 // Pro: Writes are fast — no waiting for origin
 // Con: If cache crashes before flush, writes are lost forever
 // Use when: speed matters more than perfect durability
-//           (e.g. analytics counters, session data)
+//
+//	(e.g. analytics counters, session data)
+//
 // ──────────────────────────────────────────────────────────
 //
 // TODO: implement this function
 func WriteBack(c *Cache, key, value string) error {
-	// YOUR CODE HERE
-	return fmt.Errorf("not implemented")
+	c.Set(key, value, true)
+	fmt.Printf("[WRITE-BACK] key=%v written to cache(pending origin flush)\n")
+	return nil
 }
 
 // ============================================================
@@ -74,18 +84,34 @@ func WriteBack(c *Cache, key, value string) error {
 // entries to the origin. Called by startFlushWorker() below.
 //
 // Steps:
-//   1. Get all dirty keys: keys := c.DirtyKeys()
-//   2. For each dirty key:
-//        a. Get the value: value, ok := c.Get(key)
-//        b. If not found (was evicted), skip it
-//        c. Write to origin: originClient.Set(key, value)
-//        d. If write succeeds: c.MarkClean(key)
-//        e. Print: [FLUSH] key="..." flushed to origin
-//   3. If len(keys) > 0: print total flushed count
+//  1. Get all dirty keys: keys := c.DirtyKeys()
+//  2. For each dirty key:
+//     a. Get the value: value, ok := c.Get(key)
+//     b. If not found (was evicted), skip it
+//     c. Write to origin: originClient.Set(key, value)
+//     d. If write succeeds: c.MarkClean(key)
+//     e. Print: [FLUSH] key="..." flushed to origin
+//  3. If len(keys) > 0: print total flushed count
 //
 // TODO: implement this function
 func flushDirty(c *Cache, originClient *OriginClient) {
-	// YOUR CODE HERE
+	keys := c.DirtyKeys()
+	for _, key := range keys {
+		value, ok := c.Get(key)
+		if !ok {
+			continue
+		}
+		success := originClient.Set(key, value)
+		if success {
+			c.MarkClean(key)
+		}
+		fmt.Printf("[FLUSH] key=%v flushed to origin\n", key)
+	}
+
+	if len(keys) > 0 {
+		fmt.Printf("[FLUSH] total flushed count: ", len(keys))
+	}
+
 }
 
 // ============================================================
