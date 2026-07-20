@@ -50,6 +50,74 @@ docker logs -f lab05-worker
 ```
 
 ### Expected Output
+docker build -t lab05 -f docker/Dockerfile .
+docker-compose -f docker/docker-compose.yml up -d
+
+docker-compose -f docker/docker-compose.yml down
+
+go build -o server_bin .
+pkill server_bin
+docker exec -it lab05-worker bash
+#fixed above 
+
+# Start workers logging inside the container
+docker exec -d lab05-worker sh -c \
+    '/lab05/queue/queue_bin -mode work -broker queue-broker:9000 -queue orders -workers 3 > /tmp/worker.log 2>&1'
+
+# Enqueue some tasks (single line, type quotes manually)
+docker exec lab05-producer /lab05/queue/queue_bin -mode produce -broker queue-broker:9000 -queue orders -payload "order-123" -count 5
+
+# Check worker logs
+docker exec lab05-worker cat /tmp/worker.log
+
+```
+
+
+```bash
+docker exec lab05-subscriber1 pkill pubsub_bin
+
+# Terminal 1, 2, 3 — start subscribers, redirecting output to log files
+docker exec -d lab05-subscriber1 sh -c \
+    '/lab05/pubsub/pubsub_bin -mode subscribe -topic news -id sub1 -port 9100 -host subscriber1 > /tmp/sub1.log 2>&1'
+
+docker exec lab05-subscriber2 pkill pubsub_bin
+docker exec -d lab05-subscriber2 sh -c \
+    '/lab05/pubsub/pubsub_bin -mode subscribe -topic news -id sub2 -port 9100 -host subscriber2 > /tmp/sub2.log 2>&1'
+
+docker exec lab05-subscriber3 pkill pubsub_bin
+docker exec -d lab05-subscriber3 sh -c \
+    '/lab05/pubsub/pubsub_bin -mode subscribe -topic news -id sub3 -port 9100 -host subscriber3 > /tmp/sub3.log 2>&1'
+
+# Wait for subscriptions to register
+sleep 2
+
+# Publish
+docker exec lab05-publisher /lab05/pubsub/pubsub_bin \
+    -mode publish -topic news -key headline -value "Breaking news!"
+
+# Wait briefly for delivery
+sleep 1
+
+# Check logs from inside each container
+docker exec lab05-subscriber1 cat /tmp/sub1.log
+docker exec lab05-subscriber2 cat /tmp/sub2.log
+docker exec lab05-subscriber3 cat /tmp/sub3.log
+
+
+docker exec lab05-publisher /lab05/pubsub/pubsub_bin -mode publish -topic news -key headline -value "Breaking news!"
+```
+
+
+## Experiment B — Worker Crash Recovery
+
+### step 1 - increasing the procesing sleep
+### step 2 - run experiment
+
+
+```bash
+docker exec lab05-worker /lab05/queue/queue_bin -mode work -queue orders -workers 3 &
+
+docker exec lab05-producer /lab05/queue/queue_bin -mode produce -queue orders -payload order -count 20
 
 ```
 [WORKER worker-0] Processing task=task-1 payload=order-0
