@@ -1,0 +1,60 @@
+version: '3.8'
+networks:
+  lab07:
+    driver: bridge
+
+services:
+  raft-node1:
+    image: lab07
+    container_name: lab07-node1
+    hostname: raft-node1
+    networks: [lab07]
+    ports: ["9400:9400"]
+    environment:
+      NODE_ID: raft-node1
+      PORT: "9400"
+      PEERS: "raft-node2:9401,raft-node3:9402,raft-node4:9403,raft-node5:9404"
+
+  raft-node2:
+    image: lab07
+    container_name: lab07-node2
+    hostname: raft-node2
+    networks: [lab07]
+    ports: ["9401:9401"]
+    environment:
+      NODE_ID: raft-node2
+      PORT: "9401"
+      PEERS: "raft-node1:9400,raft-node3:9402,raft-node4:9403,raft-node5:9404"
+
+  raft-node3:
+    image: lab07
+    container_name: lab07-node3
+    hostname: raft-node3
+    networks: [lab07]
+    ports: ["9402:9402"]
+    environment:
+      NODE_ID: raft-node3
+      PORT: "9402"
+      PEERS: "raft-node1:9400,raft-node2:9401,raft-node4:9403,raft-node5:9404"
+
+  raft-node4:
+    image: lab07
+    container_name: lab07-node4
+    hostname: raft-node4
+    networks: [lab07]
+    ports: ["9403:9403"]
+    environment:
+      NODE_ID: raft-node4
+      PORT: "9403"
+      PEERS: "raft-node1:9400,raft-node2:9401,raft-node3:9402,raft-node5:9404"
+
+  raft-node5:
+    image: lab07
+    container_name: lab07-node5
+    hostname: raft-node5
+    networks: [lab07]
+    ports: ["9404:9404"]
+    environment:
+      NODE_ID: raft-node5
+      PORT: "9404"
+      PEERS: "raft-node1:9400,raft-node2:9401,raft-node3:9402,raft-node4:9403"
