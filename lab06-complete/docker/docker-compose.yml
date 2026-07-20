@@ -1,0 +1,67 @@
+version: '3.8'
+
+# ============================================================
+# Lab 06 — Caching and Replication
+# ============================================================
+
+networks:
+  lab06:
+    driver: bridge
+
+services:
+  origin:
+    image: lab06
+    container_name: lab06-origin
+    hostname: origin
+    networks: [lab06]
+    environment:
+      ROLE: origin
+      PORT: "9300"
+
+  cache-primary:
+    image: lab06
+    container_name: lab06-cache-primary
+    hostname: cache-primary
+    networks: [lab06]
+    ports: ["9200:9200"]
+    environment:
+      ROLE: cache
+      PORT: "9200"
+      ORIGIN: "origin:9300"
+      CAPACITY: "10"
+    depends_on: [origin]
+
+  cache-replica1:
+    image: lab06
+    container_name: lab06-cache-replica1
+    hostname: cache-replica1
+    networks: [lab06]
+    ports: ["9201:9200"]
+    environment:
+      ROLE: cache
+      PORT: "9200"
+      ORIGIN: "origin:9300"
+      CAPACITY: "10"
+    depends_on: [origin]
+
+  cache-replica2:
+    image: lab06
+    container_name: lab06-cache-replica2
+    hostname: cache-replica2
+    networks: [lab06]
+    ports: ["9202:9200"]
+    environment:
+      ROLE: cache
+      PORT: "9200"
+      ORIGIN: "origin:9300"
+      CAPACITY: "10"
+    depends_on: [origin]
+
+  client:
+    image: lab06
+    container_name: lab06-client
+    hostname: client
+    networks: [lab06]
+    environment:
+      ROLE: idle
+    depends_on: [cache-primary, cache-replica1, cache-replica2]
