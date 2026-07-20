@@ -20,9 +20,9 @@ import (
 
 // Entry represents one cached key-value pair with metadata
 type Entry struct {
-	Value       string
+	Value        string
 	LastAccessed time.Time // updated every time this entry is read or written
-	IsDirty     bool      // true = written to cache but NOT yet flushed to origin (write-back)
+	IsDirty      bool      // true = written to cache but NOT yet flushed to origin (write-back)
 }
 
 // Cache is a thread-safe LRU cache with a fixed capacity.
@@ -41,17 +41,18 @@ type Cache struct {
 // Create and return a new Cache with the given capacity.
 //
 // Steps:
-//   1. Create a Cache with:
-//        items:    make(map[string]Entry)
-//        capacity: capacity
-//        stats:    NewStats()
-//   2. Print: [CACHE] Initialised (capacity=N)
-//   3. Return a pointer to the cache
+//  1. Create a Cache with:
+//     items:    make(map[string]Entry)
+//     capacity: capacity
+//     stats:    NewStats()
+//  2. Print: [CACHE] Initialised (capacity=N)
+//  3. Return a pointer to the cache
 //
 // TODO: implement this function
 func NewCache(capacity int) *Cache {
-	// YOUR CODE HERE
-	return nil
+	cache := Cache{items: make(map[string]Entry), capacity: capacity, stats: NewStats()}
+	fmt.Printf("[CACHE] Initialised (capacity=%v)\n", capacity)
+	return &cache
 }
 
 // ============================================================
@@ -60,16 +61,16 @@ func NewCache(capacity int) *Cache {
 // Retrieve a value from the cache.
 //
 // Steps:
-//   1. Lock: c.mu.Lock() / defer c.mu.Unlock()
-//   2. Look up the key in c.items
-//   3. If NOT found:
-//        c.stats.Miss()
-//        return "", false
-//   4. If found:
-//        Update LastAccessed: entry.LastAccessed = time.Now()
-//        Store back: c.items[key] = entry
-//        c.stats.Hit()
-//        return entry.Value, true
+//  1. Lock: c.mu.Lock() / defer c.mu.Unlock()
+//  2. Look up the key in c.items
+//  3. If NOT found:
+//     c.stats.Miss()
+//     return "", false
+//  4. If found:
+//     Update LastAccessed: entry.LastAccessed = time.Now()
+//     Store back: c.items[key] = entry
+//     c.stats.Hit()
+//     return entry.Value, true
 //
 // ── WHY UPDATE LastAccessed? ──────────────────────────────
 // LRU = Least Recently Used. Every time we read a key, we mark
@@ -80,7 +81,18 @@ func NewCache(capacity int) *Cache {
 // TODO: implement this function
 func (c *Cache) Get(key string) (string, bool) {
 	// YOUR CODE HERE
-	return "", false
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	entry, ok := c.items[key]
+	if !ok {
+		c.stats.Miss()
+		return "", false
+	}
+	entry.LastAccessed = time.Now()
+	c.items[key] = entry
+	c.stats.Hit()
+	return entry.Value, true
 }
 
 // ============================================================
@@ -89,20 +101,34 @@ func (c *Cache) Get(key string) (string, bool) {
 // Store a key-value pair in the cache.
 //
 // Steps:
-//   1. Lock: c.mu.Lock() / defer c.mu.Unlock()
-//   2. If the key does NOT already exist AND cache is full:
-//        call c.evictLRU()   (removes the least recently used entry)
-//   3. Store the entry:
-//        c.items[key] = Entry{
-//            Value:        value,
-//            LastAccessed: time.Now(),
-//            IsDirty:      dirty,  (true for write-back, false for write-through)
-//        }
-//   4. Print: [CACHE] Set key="..." value="..." dirty=true/false
+//  1. Lock: c.mu.Lock() / defer c.mu.Unlock()
+//  2. If the key does NOT already exist AND cache is full:
+//     call c.evictLRU()   (removes the least recently used entry)
+//  3. Store the entry:
+//     c.items[key] = Entry{
+//     Value:        value,
+//     LastAccessed: time.Now(),
+//     IsDirty:      dirty,  (true for write-back, false for write-through)
+//     }
+//  4. Print: [CACHE] Set key="..." value="..." dirty=true/false
 //
 // TODO: implement this function
 func (c *Cache) Set(key, value string, dirty bool) {
-	// YOUR CODE HERE
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	_, found := c.items[key]
+
+	if !found && c.IsFull() {
+		c.evictLRU()
+	}
+
+	c.items[key] = Entry{
+		Value:        value,
+		LastAccessed: time.Now(),
+		IsDirty:      dirty,
+	}
+	fmt.Printf("[CACHE] Set key=%v value=%v dirty=%v\n", key, value, dirty)
 }
 
 // ============================================================
@@ -112,29 +138,42 @@ func (c *Cache) Set(key, value string, dirty bool) {
 // Called by Set() when the cache is full.
 //
 // Algorithm:
-//   1. Loop through all entries in c.items
-//   2. Find the entry with the OLDEST LastAccessed time
-//      (smallest time.Time value)
-//   3. Delete that key from c.items
-//   4. c.stats.Eviction()
-//   5. Print: [CACHE] Evicted key="..." (LRU)
+//  1. Loop through all entries in c.items
+//  2. Find the entry with the OLDEST LastAccessed time
+//     (smallest time.Time value)
+//  3. Delete that key from c.items
+//  4. c.stats.Eviction()
+//  5. Print: [CACHE] Evicted key="..." (LRU)
 //
 // HINT: Use a variable to track the oldest key seen so far:
-//   oldestKey := ""
-//   var oldestTime time.Time
-//   for key, entry := range c.items {
-//       if oldestKey == "" || entry.LastAccessed.Before(oldestTime) {
-//           oldestKey = key
-//           oldestTime = entry.LastAccessed
-//       }
-//   }
+//
+//	oldestKey := ""
+//	var oldestTime time.Time
+//	for key, entry := range c.items {
+//	    if oldestKey == "" || entry.LastAccessed.Before(oldestTime) {
+//	        oldestKey = key
+//	        oldestTime = entry.LastAccessed
+//	    }
+//	}
 //
 // NOTE: evictLRU is called from Set() which already holds the lock —
 // do NOT lock again here (would deadlock)
 //
 // TODO: implement this function
 func (c *Cache) evictLRU() {
-	// YOUR CODE HERE
+	oldestKey := ""
+	var oldestTime time.Time
+
+	for key, entry := range c.items {
+		if oldestKey == "" || entry.LastAccessed.Before(oldestTime) {
+			oldestKey = key
+			oldestTime = entry.LastAccessed
+		}
+	}
+	delete(c.items, oldestKey)
+
+	c.stats.Eviction()
+	fmt.Printf("[CACHE] Evicted key=%v (LRU)\n", oldestKey)
 }
 
 // ============================================================
