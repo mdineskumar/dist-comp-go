@@ -17,26 +17,33 @@ import (
 
 // ── RPC argument / reply types ────────────────────────────
 
-type GetArgs   struct{ Key string }
-type GetReply  struct{ Value string; Found bool; FromOrigin bool }
+type GetArgs struct{ Key string }
+type GetReply struct {
+	Value      string
+	Found      bool
+	FromOrigin bool
+}
 
-type SetArgs   struct{ Key, Value, Strategy string }
-type SetReply  struct{ Success bool }
+type SetArgs struct{ Key, Value, Strategy string }
+type SetReply struct{ Success bool }
 
-type RegisterReplicaArgs  struct{ Addr string }
+type RegisterReplicaArgs struct{ Addr string }
 type RegisterReplicaReply struct{}
 
-type ApplyReplicaArgs  struct{ Key, Value string }
+type ApplyReplicaArgs struct{ Key, Value string }
 type ApplyReplicaReply struct{}
 
-type StatsArgs  struct{}
-type StatsReply struct{ Hits, Misses, Evictions int64; HitRate float64 }
+type StatsArgs struct{}
+type StatsReply struct {
+	Hits, Misses, Evictions int64
+	HitRate                 float64
+}
 
 // CacheRPC is the RPC handler
 type CacheRPC struct {
-	cache         *Cache
-	originClient  *OriginClient
-	replication   *ReplicationManager
+	cache        *Cache
+	originClient *OriginClient
+	replication  *ReplicationManager
 }
 
 // ============================================================
@@ -47,29 +54,57 @@ type CacheRPC struct {
 // Try to get from cache first (c.cache.Get(args.Key))
 // If cache HIT: set reply.Value, reply.Found=true, reply.FromOrigin=false
 // If cache MISS:
-//   1. Fetch from origin: originClient.Get(args.Key)
-//   2. If found in origin: store in cache (c.cache.Set(key, value, false))
-//      set reply.Value, reply.Found=true, reply.FromOrigin=true
-//   3. If not in origin: reply.Found=false
+//  1. Fetch from origin: originClient.Get(args.Key)
+//  2. If found in origin: store in cache (c.cache.Set(key, value, false))
+//     set reply.Value, reply.Found=true, reply.FromOrigin=true
+//  3. If not in origin: reply.Found=false
 //
 // TODO: implement
 func (r *CacheRPC) Get(args *GetArgs, reply *GetReply) error {
-	// YOUR CODE HERE
+	val, hit := r.cache.Get(args.Key)
+	if hit {
+		reply.Value = val
+		reply.Found = true
+		reply.FromOrigin = false
+	} else {
+		val, found := r.originClient.Get(args.Key)
+		if found {
+			r.cache.Set(args.Key, val, false)
+			reply.Value = val
+			reply.Found = true
+			reply.FromOrigin = true
+		} else {
+			reply.Found = false
+		}
+	}
 	return nil
 }
 
 // ── Set ───────────────────────────────────────────────────
 // Write using the strategy specified in args.Strategy:
-//   "write-through" → call WriteThrough(cache, originClient, key, value)
-//   "write-back"    → call WriteBack(cache, key, value)
-//   anything else   → return error "unknown strategy"
+//
+//	"write-through" → call WriteThrough(cache, originClient, key, value)
+//	"write-back"    → call WriteBack(cache, key, value)
+//	anything else   → return error "unknown strategy"
+//
 // Then replicate to all replicas: r.replication.Replicate(key, value)
 // Set reply.Success = true
 //
 // TODO: implement
 func (r *CacheRPC) Set(args *SetArgs, reply *SetReply) error {
-	// YOUR CODE HERE
-	return fmt.Errorf("not implemented")
+	switch args.Strategy {
+	case "write-through":
+		WriteThrough(r.cache, r.originClient, args.Key, args.Value)
+	case "write-back":
+		WriteBack(r.cache, args.Key, args.Value)
+
+	default:
+		return fmt.Errorf("unknown strategy\n")
+	}
+
+	r.replication.Replicate(args.Key, args.Value)
+	reply.Success = true
+	return nil
 }
 
 // ── RegisterReplica ───────────────────────────────────────
@@ -86,7 +121,7 @@ func (r *CacheRPC) RegisterReplica(args *RegisterReplicaArgs, reply *RegisterRep
 //
 // TODO: implement
 func (r *CacheRPC) ApplyReplica(args *ApplyReplicaArgs, reply *ApplyReplicaReply) error {
-	// YOUR CODE HERE
+	ApplyReplica(r.cache, args.Key, args.Value)
 	return nil
 }
 

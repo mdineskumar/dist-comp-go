@@ -36,13 +36,16 @@ func NewReplicationManager() *ReplicationManager {
 // Register a new replica address with the primary.
 //
 // Steps:
-//   1. Lock: rm.mu.Lock() / defer rm.mu.Unlock()
-//   2. Append addr to rm.replicas
-//   3. Print: [REPLICATION] Registered replica: addr
+//  1. Lock: rm.mu.Lock() / defer rm.mu.Unlock()
+//  2. Append addr to rm.replicas
+//  3. Print: [REPLICATION] Registered replica: addr
 //
 // TODO: implement this function
 func (rm *ReplicationManager) RegisterReplica(addr string) {
-	// YOUR CODE HERE
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+	rm.replicas = append(rm.replicas, addr)
+	fmt.Printf("[REPLICATION] Registered replica: %v\n", addr)
 }
 
 // ============================================================
@@ -52,20 +55,27 @@ func (rm *ReplicationManager) RegisterReplica(addr string) {
 // Called by the primary after every successful write.
 //
 // Steps:
-//   1. Read replica list (use read lock: rm.mu.RLock())
-//   2. For each replica, send concurrently using goroutines:
-//        go func(addr string) {
-//            callRPC(addr, "CacheRPC.ApplyReplica",
-//                &ApplyReplicaArgs{Key: key, Value: value}, &ApplyReplicaReply{})
-//        }(replica)
-//   3. Print: [REPLICATION] Replicated key="..." to N replicas
+//  1. Read replica list (use read lock: rm.mu.RLock())
+//  2. For each replica, send concurrently using goroutines:
+//     go func(addr string) {
+//     callRPC(addr, "CacheRPC.ApplyReplica",
+//     &ApplyReplicaArgs{Key: key, Value: value}, &ApplyReplicaReply{})
+//     }(replica)
+//  3. Print: [REPLICATION] Replicated key="..." to N replicas
 //
 // NOTE: use goroutines so a slow replica does not block the primary
 // NOTE: do NOT wait for replicas — fire and forget (eventual consistency)
 //
 // TODO: implement this function
 func (rm *ReplicationManager) Replicate(key, value string) {
-	// YOUR CODE HERE
+	rm.mu.RLock()
+	for _, replica := range rm.replicas {
+		go func(addr string) {
+			callRPC(addr, "CacheRPC.ApplyReplica", &ApplyReplicaArgs{Key: key, Value: value}, &ApplyReplicaReply{})
+		}(replica)
+	}
+
+	fmt.Printf("[REPLICATION] replicated key=%v to %v replicas\n", key, len(rm.replicas))
 }
 
 // ============================================================
@@ -75,14 +85,14 @@ func (rm *ReplicationManager) Replicate(key, value string) {
 // Called on the REPLICA side when it receives a Replicate RPC.
 //
 // Steps:
-//   1. Call c.Set(key, value, false)
-//      dirty=false because this came from the primary — already in sync
-//   2. Print: [REPLICA] Applied key="..." value="..."
+//  1. Call c.Set(key, value, false)
+//     dirty=false because this came from the primary — already in sync
+//  2. Print: [REPLICA] Applied key="..." value="..."
 //
 // TODO: implement this function
 func ApplyReplica(c *Cache, key, value string) {
-	// YOUR CODE HERE
-	_ = fmt.Sprintf // remove when implementing
+	c.Set(key, value, false)
+	fmt.Printf("[REPLICATION] Applied key=%v value=%v\n", key, value)
 }
 
 // ============================================================
