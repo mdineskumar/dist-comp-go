@@ -28,9 +28,12 @@ type OriginDB struct {
 	delay time.Duration
 }
 
-type OriginGetArgs  struct{ Key string }
-type OriginGetReply struct{ Value string; Found bool }
-type OriginSetArgs  struct{ Key, Value string }
+type OriginGetArgs struct{ Key string }
+type OriginGetReply struct {
+	Value string
+	Found bool
+}
+type OriginSetArgs struct{ Key, Value string }
 type OriginSetReply struct{ Success bool }
 
 func (o *OriginDB) Get(args *OriginGetArgs, reply *OriginGetReply) error {
@@ -52,6 +55,7 @@ func (o *OriginDB) Set(args *OriginSetArgs, reply *OriginSetReply) error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	o.store[args.Key] = args.Value
+	time.Sleep(o.delay) // simulate slow DB write
 	reply.Success = true
 	fmt.Printf("[ORIGIN] Set key=%-20q value=%q\n", args.Key, args.Value)
 	return nil
@@ -67,6 +71,12 @@ func StartOriginServer(port string, delay time.Duration) {
 	for i := 0; i < 20; i++ {
 		db.store[fmt.Sprintf("preloaded-key-%d", i)] = fmt.Sprintf("preloaded-value-%d", i)
 	}
+
+	db.store["alpha"] = "test_val"
+	db.store["beta"] = "test_val"
+	db.store["gamma"] = "test_val"
+	db.store["delta"] = "test_val"
+	db.store["epsilon"] = "test_val"
 
 	server := rpc.NewServer()
 	server.Register(db)
