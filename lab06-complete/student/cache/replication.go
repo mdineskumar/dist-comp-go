@@ -69,6 +69,7 @@ func (rm *ReplicationManager) RegisterReplica(addr string) {
 // TODO: implement this function
 func (rm *ReplicationManager) Replicate(key, value string) {
 	rm.mu.RLock()
+	defer rm.mu.RUnlock()
 	for _, replica := range rm.replicas {
 		go func(addr string) {
 			callRPC(addr, "CacheRPC.ApplyReplica", &ApplyReplicaArgs{Key: key, Value: value}, &ApplyReplicaReply{})

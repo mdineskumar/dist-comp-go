@@ -41,7 +41,7 @@ func NewStats() *Stats {
 //
 // TODO: implement all three functions
 func (s *Stats) Hit() {
-	atomic.AddInt64(&s.hits, 10)
+	atomic.AddInt64(&s.hits, 1)
 }
 
 func (s *Stats) Miss() {

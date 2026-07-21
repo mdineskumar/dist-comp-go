@@ -44,7 +44,7 @@ func WriteThrough(c *Cache, originClient *OriginClient, key, value string) error
 	}
 	c.Set(key, value, false)
 
-	fmt.Printf("[WRITE-THROUGH] key=%v written to origin + cache")
+	fmt.Printf("[WRITE-THROUGH] key=%v written to origin + cache", key)
 
 	return nil
 }
@@ -73,7 +73,7 @@ func WriteThrough(c *Cache, originClient *OriginClient, key, value string) error
 // TODO: implement this function
 func WriteBack(c *Cache, key, value string) error {
 	c.Set(key, value, true)
-	fmt.Printf("[WRITE-BACK] key=%v written to cache(pending origin flush)\n")
+	fmt.Printf("[WRITE-BACK] key=%v written to cache(pending origin flush)\n", key)
 	return nil
 }
 
@@ -109,7 +109,7 @@ func flushDirty(c *Cache, originClient *OriginClient) {
 	}
 
 	if len(keys) > 0 {
-		fmt.Printf("[FLUSH] total flushed count: ", len(keys))
+		fmt.Printf("[FLUSH] total flushed count: %v\n", len(keys))
 	}
 
 }

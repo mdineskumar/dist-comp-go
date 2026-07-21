@@ -80,7 +80,6 @@ func NewCache(capacity int) *Cache {
 //
 // TODO: implement this function
 func (c *Cache) Get(key string) (string, bool) {
-	// YOUR CODE HERE
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -119,7 +118,7 @@ func (c *Cache) Set(key, value string, dirty bool) {
 
 	_, found := c.items[key]
 
-	if !found && c.IsFull() {
+	if !found && len(c.items) >= c.capacity {
 		c.evictLRU()
 	}
 
