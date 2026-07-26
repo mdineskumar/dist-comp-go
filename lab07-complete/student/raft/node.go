@@ -169,7 +169,14 @@ func (n *Node) becomeFollower(term int) {
 //
 // TODO: implement this function
 func (n *Node) becomeCandidate() {
-	// YOUR CODE HERE
+	n.mu.Lock()
+	n.currentTerm++
+	n.state = Candidate
+	n.votedFor = n.id
+	fmt.Printf("[NODE %v] Became Candidate (term N) - starting election\n")
+	n.resetElectionTimer()
+	n.mu.Unlock()
+	n.startElection()
 }
 
 // ============================================================
