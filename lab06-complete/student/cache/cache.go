@@ -86,11 +86,13 @@ func (c *Cache) Get(key string) (string, bool) {
 	entry, ok := c.items[key]
 	if !ok {
 		c.stats.Miss()
+		fmt.Printf("[CACHE] key=%v cache miss.\n", key)
 		return "", false
 	}
 	entry.LastAccessed = time.Now()
 	c.items[key] = entry
 	c.stats.Hit()
+	fmt.Printf("[CACHE] key=%v cache hit.\n", key)
 	return entry.Value, true
 }
 
