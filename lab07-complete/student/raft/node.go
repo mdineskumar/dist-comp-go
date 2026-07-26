@@ -88,27 +88,42 @@ type Node struct {
 // Create and return a new Raft node starting as a Follower.
 //
 // Steps:
-//   1. Create a Node with:
-//        id:           id
-//        addr:         addr
-//        peers:        peers
-//        state:        Follower
-//        currentTerm:  0
-//        votedFor:     ""
-//        log:          []LogEntry{}
-//        commitIndex:  0
-//        lastApplied:  0
-//        nextIndex:    make(map[string]int)
-//        matchIndex:   make(map[string]int)
-//        stateMachine: make(map[string]string)
-//   2. Print: [NODE id] Starting as Follower (term 0)
-//   3. Start the election timer: n.resetElectionTimer()
-//   4. Return the node
+//  1. Create a Node with:
+//     id:           id
+//     addr:         addr
+//     peers:        peers
+//     state:        Follower
+//     currentTerm:  0
+//     votedFor:     ""
+//     log:          []LogEntry{}
+//     commitIndex:  0
+//     lastApplied:  0
+//     nextIndex:    make(map[string]int)
+//     matchIndex:   make(map[string]int)
+//     stateMachine: make(map[string]string)
+//  2. Print: [NODE id] Starting as Follower (term 0)
+//  3. Start the election timer: n.resetElectionTimer()
+//  4. Return the node
 //
 // TODO: implement this function
 func NewNode(id, addr string, peers []string) *Node {
-	// YOUR CODE HERE
-	return nil
+	node := Node{
+		id:           id,
+		addr:         addr,
+		peers:        peers,
+		state:        Follower,
+		currentTerm:  0,
+		votedFor:     "",
+		log:          []LogEntry{},
+		commitIndex:  0,
+		lastApplied:  0,
+		nextIndex:    make(map[string]int),
+		matchIndex:   make(map[string]int),
+		stateMachine: make(map[string]string),
+	}
+	fmt.Printf("[NODE %v] Starting as Follower (term %v)\n", id, node.currentTerm)
+	node.resetElectionTimer()
+	return &node
 }
 
 // ============================================================
@@ -119,17 +134,21 @@ func NewNode(id, addr string, peers []string) *Node {
 // or we receive a valid heartbeat.
 //
 // Steps:
-//   1. Set n.state = Follower
-//   2. Update n.currentTerm = term
-//   3. Reset n.votedFor = ""   (new term = no vote cast yet)
-//   4. Print: [NODE id] Became Follower (term N)
-//   5. Reset election timer: n.resetElectionTimer()
+//  1. Set n.state = Follower
+//  2. Update n.currentTerm = term
+//  3. Reset n.votedFor = ""   (new term = no vote cast yet)
+//  4. Print: [NODE id] Became Follower (term N)
+//  5. Reset election timer: n.resetElectionTimer()
 //
 // NOTE: caller must hold n.mu when calling this function
 //
 // TODO: implement this function
 func (n *Node) becomeFollower(term int) {
-	// YOUR CODE HERE
+	n.state = Follower
+	n.currentTerm = term
+	n.votedFor = ""
+	fmt.Printf("[NODE %v] Became Follower (term %v)\n", n.id, n.currentTerm)
+	n.resetElectionTimer()
 }
 
 // ============================================================
@@ -139,14 +158,14 @@ func (n *Node) becomeFollower(term int) {
 // Called when the election timer fires (no heartbeat from leader).
 //
 // Steps:
-//   1. Lock: n.mu.Lock()
-//   2. Increment term: n.currentTerm++
-//   3. Set n.state = Candidate
-//   4. Vote for self: n.votedFor = n.id
-//   5. Print: [NODE id] Became Candidate (term N) — starting election
-//   6. Reset election timer (in case this election fails)
-//   7. Unlock: n.mu.Unlock()
-//   8. Start election: go n.startElection()
+//  1. Lock: n.mu.Lock()
+//  2. Increment term: n.currentTerm++
+//  3. Set n.state = Candidate
+//  4. Vote for self: n.votedFor = n.id
+//  5. Print: [NODE id] Became Candidate (term N) — starting election
+//  6. Reset election timer (in case this election fails)
+//  7. Unlock: n.mu.Unlock()
+//  8. Start election: go n.startElection()
 //
 // TODO: implement this function
 func (n *Node) becomeCandidate() {
