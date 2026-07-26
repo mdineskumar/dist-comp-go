@@ -22,21 +22,35 @@ import (
 // Transition to Leader state after winning an election.
 //
 // Steps:
-//   1. Lock: n.mu.Lock()
-//   2. Verify we are still a Candidate (we might have lost the
-//      election while goroutines were running) — if n.state != Candidate, unlock and return
-//   3. Set n.state = Leader
-//   4. Initialise nextIndex for each peer:
-//        n.nextIndex[peer] = n.lastLogIndex() + 1
-//   5. Initialise matchIndex for each peer:
-//        n.matchIndex[peer] = 0
-//   6. Print: [NODE id] Became LEADER (term N) ← N peers
-//   7. Unlock: n.mu.Unlock()
-//   8. Send immediate heartbeats: go n.sendHeartbeats()
+//  1. Lock: n.mu.Lock()
+//  2. Verify we are still a Candidate (we might have lost the
+//     election while goroutines were running) — if n.state != Candidate, unlock and return
+//  3. Set n.state = Leader
+//  4. Initialise nextIndex for each peer:
+//     n.nextIndex[peer] = n.lastLogIndex() + 1
+//  5. Initialise matchIndex for each peer:
+//     n.matchIndex[peer] = 0
+//  6. Print: [NODE id] Became LEADER (term N) ← N peers
+//  7. Unlock: n.mu.Unlock()
+//  8. Send immediate heartbeats: go n.sendHeartbeats()
 //
 // TODO: implement this function
 func (n *Node) becomeLeader() {
-	// YOUR CODE HERE
+	n.mu.Lock()
+	if n.state != Candidate {
+		n.mu.Unlock()
+		return
+	}
+	n.state = Leader
+	for _, peer := range n.peers {
+		n.nextIndex[peer] = n.lastLogIndex() + 1
+		n.matchIndex[peer] = 0
+	}
+
+	fmt.Printf("[NODE %v] Became LEADER (term %v)\n", n.id, n.currentTerm)
+	n.mu.Unlock()
+	go n.sendHeartbeats()
+
 }
 
 // ============================================================
@@ -46,17 +60,17 @@ func (n *Node) becomeLeader() {
 // This is the core of leader election.
 //
 // Steps:
-//   1. Lock, snapshot current state (term, lastLogIndex, lastLogTerm), unlock
-//   2. Create a vote channel: votes := make(chan bool, len(n.peers))
-//   3. For each peer, launch a goroutine:
-//        a. Call RequestVote RPC
-//        b. If reply.Term > our term → becomeFollower(reply.Term), return
-//        c. Send reply.VoteGranted to votes channel
-//   4. Count votes: start with 1 (our own vote)
-//      Read from votes channel len(n.peers) times
-//      If granted: voteCount++
-//      If voteCount > len(n.peers)/2 → we have majority → becomeLeader(), return
-//   5. If election ends without majority → stay as candidate (timer will retry)
+//  1. Lock, snapshot current state (term, lastLogIndex, lastLogTerm), unlock
+//  2. Create a vote channel: votes := make(chan bool, len(n.peers))
+//  3. For each peer, launch a goroutine:
+//     a. Call RequestVote RPC
+//     b. If reply.Term > our term → becomeFollower(reply.Term), return
+//     c. Send reply.VoteGranted to votes channel
+//  4. Count votes: start with 1 (our own vote)
+//     Read from votes channel len(n.peers) times
+//     If granted: voteCount++
+//     If voteCount > len(n.peers)/2 → we have majority → becomeLeader(), return
+//  5. If election ends without majority → stay as candidate (timer will retry)
 //
 // ── KEY INSIGHT ───────────────────────────────────────────
 // "First to majority wins" — as soon as we have N/2+1 votes
@@ -66,7 +80,53 @@ func (n *Node) becomeLeader() {
 //
 // TODO: implement this function
 func (n *Node) startElection() {
-	// YOUR CODE HERE
+	n.mu.Lock()
+	term := n.currentTerm
+	lastLogIndex := n.lastLogIndex()
+	lastLogTerm := n.lastLogTerm()
+	n.mu.Unlock()
+	votes := make(chan bool, len(n.peers))
+
+	for _, peer := range n.peers {
+		go func(addr string) {
+			reply := RequestVoteReply{}
+			err := callRPC(addr, "RaftRPC.RequestVote", &RequestVoteArgs{Term: term, CandidateID: n.id, LastLogIndex: lastLogIndex, LastLogTerm: lastLogTerm}, &reply)
+			if err != nil {
+				votes <- false
+				return
+			}
+			if reply.Term > term {
+				//do wee need use lock to run this function
+				n.becomeFollower(reply.Term)
+				votes <- false
+				return
+			}
+			votes <- reply.VoteGranted
+
+		}(peer)
+	}
+
+	voteCount := 1
+
+	for range len(n.peers) {
+		granted := <-votes
+
+		if granted {
+			voteCount++
+		}
+
+		if voteCount > len(n.peers)/2 {
+			n.mu.Lock()
+			//need to check we are in term that we started
+			if n.currentTerm == term {
+				n.becomeLeader()
+			}
+			n.mu.Unlock()
+
+			return
+		}
+	}
+
 }
 
 // ============================================================
@@ -77,11 +137,11 @@ func (n *Node) startElection() {
 // unnecessary elections.
 //
 // Steps:
-//   1. Create a ticker: ticker := time.NewTicker(50 * time.Millisecond)
-//   2. On each tick:
-//        a. Lock, check if still Leader, unlock
-//        b. If NOT leader → ticker.Stop() and return
-//        c. If leader → for each peer, go sendAppendEntries(peer)
+//  1. Create a ticker: ticker := time.NewTicker(50 * time.Millisecond)
+//  2. On each tick:
+//     a. Lock, check if still Leader, unlock
+//     b. If NOT leader → ticker.Stop() and return
+//     c. If leader → for each peer, go sendAppendEntries(peer)
 //
 // ── WHY 50ms? ─────────────────────────────────────────────
 // Election timeout is 150-300ms random.
@@ -92,8 +152,21 @@ func (n *Node) startElection() {
 //
 // TODO: implement this function
 func (n *Node) sendHeartbeats() {
-	// YOUR CODE HERE
-	_ = time.NewTicker // remove when implementing
+	ticker := time.NewTicker(50 * time.Millisecond)
+
+	for range ticker.C {
+		n.mu.Lock()
+		isLeader := n.state == Leader
+		n.mu.Unlock()
+		if isLeader {
+			for _, peer := range n.peers {
+				go n.sendAppendEntries(peer)
+			}
+		} else {
+			ticker.Stop()
+			return
+		}
+	}
 }
 
 // ============================================================
