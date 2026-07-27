@@ -96,8 +96,10 @@ func (n *Node) startElection() {
 				return
 			}
 			if reply.Term > term {
+				n.mu.Lock()
 				//do wee need use lock to run this function
 				n.becomeFollower(reply.Term)
+				n.mu.Unlock()
 				votes <- false
 				return
 			}

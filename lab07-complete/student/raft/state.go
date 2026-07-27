@@ -120,6 +120,8 @@ func (n *Node) GetValue(key string) (string, bool) {
 //
 // TODO: implement this function
 func (n *Node) PrintStatus() {
+	n.mu.Lock()
+	defer n.mu.Unlock()
 	fmt.Println("── Node Status ──────────────────────────────────────")
 	fmt.Printf("ID:---------%v\n", n.id)
 	fmt.Printf("State:------%v\n", n.state)

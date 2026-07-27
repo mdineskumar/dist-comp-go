@@ -92,14 +92,18 @@ func (r *RaftRPC) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) er
 	defer r.node.mu.Unlock()
 	if args.Term > r.node.currentTerm {
 		r.node.becomeFollower(args.Term)
-		reply.Term = r.node.currentTerm
-		if args.Term >= r.node.currentTerm && (r.node.votedFor == "" || r.node.votedFor == args.CandidateID) && (args.LastLogTerm > r.node.lastLogTerm() || args.LastLogTerm == r.node.lastLogTerm() && args.LastLogIndex >= r.node.lastLogIndex()) {
-			r.node.votedFor = args.CandidateID
-			reply.VoteGranted = true
-			r.node.resetElectionTimer()
-			fmt.Printf("[NODE %v] Voted for %v in term %v\n", r.node.id, args.CandidateID, args.Term)
-
-		}
+	}
+	reply.Term = r.node.currentTerm
+	if args.Term >= r.node.currentTerm &&
+		(r.node.votedFor == "" || r.node.votedFor == args.CandidateID) &&
+		(args.LastLogTerm > r.node.lastLogTerm() ||
+			args.LastLogTerm == r.node.lastLogTerm() &&
+				args.LastLogIndex >= r.node.lastLogIndex()) {
+		r.node.votedFor = args.CandidateID
+		reply.VoteGranted = true
+		r.node.resetElectionTimer()
+		fmt.Printf("[NODE %v] Voted for %v in term %v\n", r.node.id, args.CandidateID, args.Term)
+		return nil
 	}
 	reply.VoteGranted = false
 	return nil
@@ -141,7 +145,7 @@ func (r *RaftRPC) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesRep
 
 	if args.Term < n.currentTerm {
 		reply.Success = false
-		return fmt.Errorf("stale leader - reject\n")
+		return nil // fmt.Errorf("stale leader - reject\n")
 	}
 
 	if args.Term > n.currentTerm {

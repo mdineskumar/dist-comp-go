@@ -173,10 +173,10 @@ func (n *Node) becomeCandidate() {
 	n.currentTerm++
 	n.state = Candidate
 	n.votedFor = n.id
-	fmt.Printf("[NODE %v] Became Candidate (term N) - starting election\n")
+	fmt.Printf("[NODE %v] Became Candidate (term %v) - starting election\n", n.id, n.currentTerm)
 	n.resetElectionTimer()
 	n.mu.Unlock()
-	n.startElection()
+	go n.startElection()
 }
 
 // ============================================================
