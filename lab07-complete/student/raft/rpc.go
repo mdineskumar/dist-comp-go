@@ -150,6 +150,8 @@ func (r *RaftRPC) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesRep
 
 	if args.Term > n.currentTerm {
 		n.becomeFollower(args.Term)
+	} else if n.state == Candidate {
+		n.state = Follower
 	}
 
 	n.resetElectionTimer()
@@ -188,7 +190,9 @@ func (r *RaftRPC) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesRep
 	}
 
 	reply.Success = true
-	fmt.Printf("[NODE %v] Appended %v entries (term %v)\n", n.id, len(args.Entries), args.Term)
+	if len(args.Entries) > 0 {
+		fmt.Printf("[NODE %v] Appended %v entries (term %v)\n", n.id, len(args.Entries), args.Term)
+	}
 
 	return nil
 }

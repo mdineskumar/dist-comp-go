@@ -110,7 +110,7 @@ func (n *Node) startElection() {
 
 	voteCount := 1
 
-	for range len(n.peers) {
+	for i := 0; i < len(n.peers); i++ {
 		granted := <-votes
 
 		if granted {
@@ -119,11 +119,12 @@ func (n *Node) startElection() {
 
 		if voteCount > len(n.peers)/2 {
 			n.mu.Lock()
+			currentTerm := n.currentTerm
+			n.mu.Unlock()
 			//need to check we are in term that we started
-			if n.currentTerm == term {
+			if currentTerm == term {
 				n.becomeLeader()
 			}
-			n.mu.Unlock()
 
 			return
 		}
