@@ -133,10 +133,59 @@ func (r *RaftRPC) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) er
 //     go n.applyCommitted()
 //  9. reply.Success = true
 //  10. Print if entries received: [NODE id] Appended N entries (term T)
-//
-// TODO: implement this function
 func (r *RaftRPC) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) error {
-	// YOUR CODE HERE
+	n := r.node
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	reply.Term = n.currentTerm
+
+	if args.Term < n.currentTerm {
+		reply.Success = false
+		return fmt.Errorf("stale leader - reject\n")
+	}
+
+	if args.Term > n.currentTerm {
+		n.becomeFollower(args.Term)
+	}
+
+	n.resetElectionTimer()
+	//check log consistency
+	if args.PrevLogIndex > 0 {
+		//how to check do we have that index and term doesnot match
+		if args.PrevLogIndex > len(n.log) {
+			reply.Success = false
+			return nil
+		}
+
+		if n.log[args.PrevLogIndex-1].Term != args.PrevLogTerm {
+			reply.Success = false
+			return nil
+		}
+	}
+
+	for _, entry := range args.Entries {
+		if entry.Index > len(n.log) {
+			n.log = append(n.log, entry)
+		} else if n.log[entry.Index-1].Term != entry.Term {
+			//truncate log to entry.Index-1 and append
+			n.log = n.log[:entry.Index-1]
+			n.log = append(n.log, entry)
+		}
+	}
+	//  8. Update commitIndex:
+	//     if args.LeaderCommit > n.commitIndex:
+	//     n.commitIndex = min(args.LeaderCommit, n.lastLogIndex())
+	//     go n.applyCommitted()
+	//  9. reply.Success = true
+	//  10. Print if entries received: [NODE id] Appended N entries (term T)
+	if args.LeaderCommit > n.commitIndex {
+		n.commitIndex = min(args.LeaderCommit, n.lastLogIndex())
+		go n.applyCommitted()
+	}
+
+	reply.Success = true
+	fmt.Printf("[NODE %v] Appended %v entries (term %v)\n", n.id, len(args.Entries), args.Term)
+
 	return nil
 }
 

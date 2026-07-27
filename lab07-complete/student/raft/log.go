@@ -43,35 +43,58 @@ import (
 // Leader receives a command from a client and starts replication.
 //
 // Steps:
-//   1. Lock: n.mu.Lock()
-//   2. Verify this node is still Leader — if not, unlock and return false, error
-//   3. Create new log entry:
-//        entry := LogEntry{
-//            Term:    n.currentTerm,
-//            Index:   n.lastLogIndex() + 1,
-//            Command: command,
-//        }
-//   4. Append to leader's own log: n.log = append(n.log, entry)
-//   5. Print: [LEADER id] Appended entry index=N command="..."
-//   6. Unlock: n.mu.Unlock()
-//   7. Replicate to all peers: n.replicateLog()
-//   8. Wait for commit (poll commitIndex):
-//        for i := 0; i < 50; i++ {   (timeout after 50 * 10ms = 500ms)
-//            n.mu.Lock()
-//            if n.commitIndex >= entry.Index {
-//                n.mu.Unlock()
-//                return true, nil
-//            }
-//            n.mu.Unlock()
-//            time.Sleep(10 * time.Millisecond)
-//        }
-//   9. Return false, error "commit timeout"
+//  1. Lock: n.mu.Lock()
+//  2. Verify this node is still Leader — if not, unlock and return false, error
+//  3. Create new log entry:
+//     entry := LogEntry{
+//     Term:    n.currentTerm,
+//     Index:   n.lastLogIndex() + 1,
+//     Command: command,
+//     }
+//  4. Append to leader's own log: n.log = append(n.log, entry)
+//  5. Print: [LEADER id] Appended entry index=N command="..."
+//  6. Unlock: n.mu.Unlock()
+//  7. Replicate to all peers: n.replicateLog()
+//  8. Wait for commit (poll commitIndex):
+//     for i := 0; i < 50; i++ {   (timeout after 50 * 10ms = 500ms)
+//     n.mu.Lock()
+//     if n.commitIndex >= entry.Index {
+//     n.mu.Unlock()
+//     return true, nil
+//     }
+//     n.mu.Unlock()
+//     time.Sleep(10 * time.Millisecond)
+//     }
+//  9. Return false, error "commit timeout"
 //
 // TODO: implement this function
 func (n *Node) AppendEntry(command string) (bool, error) {
-	// YOUR CODE HERE
-	_ = time.Sleep // remove when implementing
-	return false, fmt.Errorf("not implemented")
+	n.mu.Lock()
+	if n.state != Leader {
+		n.mu.Unlock()
+		return false, fmt.Errorf("node is not leader\n")
+	}
+	entry := LogEntry{
+		Term:    n.currentTerm,
+		Index:   n.lastLogIndex() + 1,
+		Command: command,
+	}
+	n.log = append(n.log, entry)
+	fmt.Printf("[LEADER %v] Appended entry index=%v command=%v\n", n.id, entry.Index, command)
+
+	n.mu.Unlock()
+	n.replicateLog()
+
+	for i := 0; i < 50; i++ {
+		n.mu.Lock()
+		if n.commitIndex >= entry.Index {
+			n.mu.Unlock()
+			return true, nil
+		}
+		n.mu.Unlock()
+		time.Sleep(10 * time.Millisecond)
+	}
+	return false, fmt.Errorf("commit timeout\n")
 }
 
 // ============================================================
@@ -81,9 +104,9 @@ func (n *Node) AppendEntry(command string) (bool, error) {
 // the latest log entry.
 //
 // Steps:
-//   1. For each peer, launch a goroutine:
-//        go n.sendAppendEntries(peer)
-//      (sendAppendEntries is already implemented in election.go)
+//  1. For each peer, launch a goroutine:
+//     go n.sendAppendEntries(peer)
+//     (sendAppendEntries is already implemented in election.go)
 //
 // That's it — just fan out to all peers concurrently.
 // sendAppendEntries handles the retry logic (backing up nextIndex)
@@ -91,7 +114,9 @@ func (n *Node) AppendEntry(command string) (bool, error) {
 //
 // TODO: implement this function
 func (n *Node) replicateLog() {
-	// YOUR CODE HERE
+	for _, peer := range n.peers {
+		go n.sendAppendEntries(peer)
+	}
 }
 
 // ============================================================
@@ -103,23 +128,40 @@ func (n *Node) replicateLog() {
 // This is called after each successful AppendEntries reply.
 //
 // Steps:
-//   Find the highest index N such that:
-//     a. N > n.commitIndex
-//     b. n.log[N-1].Term == n.currentTerm  (only commit current term entries)
-//     c. A majority of peers have n.matchIndex[peer] >= N
-//        (i.e. count peers where matchIndex[peer] >= N, add 1 for self)
-//        if count > len(n.peers)/2 → majority
 //
-//   If such N exists:
-//     n.commitIndex = N
-//     Print: [LEADER id] Committed up to index N
-//     go n.applyCommitted()
+//	Find the highest index N such that:
+//	  a. N > n.commitIndex
+//	  b. n.log[N-1].Term == n.currentTerm  (only commit current term entries)
+//	  c. A majority of peers have n.matchIndex[peer] >= N
+//	     (i.e. count peers where matchIndex[peer] >= N, add 1 for self)
+//	     if count > len(n.peers)/2 → majority
+//
+//	If such N exists:
+//	  n.commitIndex = N
+//	  Print: [LEADER id] Committed up to index N
+//	  go n.applyCommitted()
 //
 // NOTE: caller must hold n.mu when calling this function
 //
 // TODO: implement this function
 func (n *Node) commitEntries() {
-	// YOUR CODE HERE
+	for N := n.commitIndex + 1; N <= len(n.log); N++ {
+		if n.log[N-1].Term != n.currentTerm {
+			continue
+		}
+
+		count := 1
+		for _, peer := range n.peers {
+			if n.matchIndex[peer] >= N {
+				count++
+			}
+		}
+
+		if count > len(n.peers)/2 {
+			n.commitIndex = N
+			fmt.Printf("[LEADER %v] Committed up to index %v\n", n.id, N)
+		}
+	}
 }
 
 // ============================================================
