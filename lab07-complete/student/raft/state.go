@@ -37,26 +37,44 @@ import (
 // Apply one committed log command to the key-value state machine.
 //
 // Parse the command string:
-//   "SET city London" → n.stateMachine["city"] = "London"
-//   "DEL city"        → delete(n.stateMachine, "city")
-//   anything else     → print warning and ignore
+//
+//	"SET city London" → n.stateMachine["city"] = "London"
+//	"DEL city"        → delete(n.stateMachine, "city")
+//	anything else     → print warning and ignore
 //
 // Steps:
-//   1. Split command by spaces: parts := strings.Fields(command)
-//   2. If len(parts) == 0: return
-//   3. Switch on parts[0] (uppercase):
-//        "SET": if len(parts) >= 3: n.stateMachine[parts[1]] = parts[2]
-//        "DEL": if len(parts) >= 2: delete(n.stateMachine, parts[1])
-//        default: print warning
-//   4. Print: [STATE id] Applied "command" → stateMachine now has N keys
+//  1. Split command by spaces: parts := strings.Fields(command)
+//  2. If len(parts) == 0: return
+//  3. Switch on parts[0] (uppercase):
+//     "SET": if len(parts) >= 3: n.stateMachine[parts[1]] = parts[2]
+//     "DEL": if len(parts) >= 2: delete(n.stateMachine, parts[1])
+//     default: print warning
+//  4. Print: [STATE id] Applied "command" → stateMachine now has N keys
 //
 // NOTE: caller must hold n.mu when calling this function
 //
 // TODO: implement this function
 func (n *Node) applyToStateMachine(command string) {
-	// YOUR CODE HERE
-	_ = strings.Fields // remove when implementing
-	_ = fmt.Sprintf    // remove when implementing
+	parts := strings.Fields(command)
+	if len(parts) == 0 {
+		return
+	}
+	switch strings.ToUpper(parts[0]) {
+	case "SET":
+		if len(parts) >= 3 {
+			n.stateMachine[parts[1]] = parts[2]
+		}
+		break
+	case "DEL":
+		if len(parts) >= 2 {
+			delete(n.stateMachine, parts[1])
+		}
+		break
+	default:
+		fmt.Printf("warning: commands should be SET or DEL\n")
+	}
+	fmt.Printf("[STATE %v] Applied %v -> stateMachine now has %v keys\n", n.id, command, len(n.stateMachine))
+
 }
 
 // ============================================================
@@ -65,14 +83,20 @@ func (n *Node) applyToStateMachine(command string) {
 // Read a value from the state machine.
 //
 // Steps:
-//   1. Lock: n.mu.Lock() / defer n.mu.Unlock()
-//   2. Look up key in n.stateMachine
-//   3. Return value, true if found
-//   4. Return "", false if not found
+//  1. Lock: n.mu.Lock() / defer n.mu.Unlock()
+//  2. Look up key in n.stateMachine
+//  3. Return value, true if found
+//  4. Return "", false if not found
 //
 // TODO: implement this function
 func (n *Node) GetValue(key string) (string, bool) {
-	// YOUR CODE HERE
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	value, ok := n.stateMachine[key]
+	if ok {
+		return value, true
+	}
 	return "", false
 }
 
@@ -82,18 +106,29 @@ func (n *Node) GetValue(key string) (string, bool) {
 // Print a formatted summary of this node's current state.
 //
 // Example output:
-//   ── Node Status ──────────────────────────────────────
-//     ID:           raft-node1
-//     State:        leader
-//     Term:         3
-//     Log length:   5
-//     Committed:    5
-//     Applied:      5
-//     State machine: 3 keys
-//       city = London
-//       country = UK
+//
+//	── Node Status ──────────────────────────────────────
+//	  ID:           raft-node1
+//	  State:        leader
+//	  Term:         3
+//	  Log length:   5
+//	  Committed:    5
+//	  Applied:      5
+//	  State machine: 3 keys
+//	    city = London
+//	    country = UK
 //
 // TODO: implement this function
 func (n *Node) PrintStatus() {
-	// YOUR CODE HERE
+	fmt.Println("── Node Status ──────────────────────────────────────")
+	fmt.Printf("ID:---------%v\n", n.id)
+	fmt.Printf("State:------%v\n", n.state)
+	fmt.Printf("Term:-------%v\n", n.currentTerm)
+	fmt.Printf("Log Length:-%v\n", len(n.log))
+	fmt.Printf("Committed:--%v\n", n.commitIndex)
+	fmt.Printf("Applied:----%v\n", n.lastApplied)
+	fmt.Printf("State machine:%v\n", len(n.stateMachine))
+	for key, value := range n.stateMachine {
+		fmt.Printf("     %v = %v\n", key, value)
+	}
 }
